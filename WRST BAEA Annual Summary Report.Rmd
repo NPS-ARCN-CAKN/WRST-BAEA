@@ -1,0 +1,577 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{=html}
+<style>
+    h1 {
+        font-family: "Times New Roman";
+    }
+    
+    h1.title {
+      font-weight: bold;
+    }
+    
+    h2 {
+        font-family: "Times New Roman";
+    }
+    
+    h3 {
+        font-family: "Times New Roman";
+    }
+    
+    p {
+        font-family: "Times New Roman";
+        font-size: 14px;
+    }
+</style>
+```
+
+
+```{r echo=FALSE}
+SurveyYear = 2022  # Set this to the report year
+```
+
+---
+title: Annual Report on Vital Signs monitoring of distribution and abundance of Bald Eagles in Wrangell-St. Elias National Park and Preserve, `r SurveyYear` 
+output:
+  html_document:
+    df_print: paged
+
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
+
+# Load libraries
+library(RODBC)
+library(knitr)
+library(ggplot2)
+library(sp)
+library(rgdal)
+library(data.table)
+library(dplyr)
+library(rgdal)
+library(sf)
+library(english)
+
+
+
+
+# setwd("< directory with all your files>")
+library(rgdal)         # for readOGR(...)
+library(ggplot2)
+library(RColorBrewer)  # for brewer.pal(...)
+library(ggplot2)
+library(ggmap)
+
+```
+
+
+
+```{r echo=FALSE}
+
+
+
+
+
+
+
+
+
+
+# Gather data to present later in the report
+CurrentDate = Sys.Date() # Get the current date
+
+# ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
+# Contact data manager for server and database details.
+# ConnectionString to the bald eagles Sql Server database
+BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna_dev;Database=CAKN_BaldEagles;trusted_connection=YES"
+#BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01,58468;Database=CAKN_BaldEagles;trusted_connection=YES"
+
+
+# Database connection to the eagles database
+BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString)
+#BaldEaglesConnection = odbcConnect("CAKN_BaldEagles Dev")
+# Function to return data frames from SQL database queries
+GetDataFrameFromDatabase <- function(Sql) {
+   return(sqlQuery(BaldEaglesConnection, Sql))
+}
+
+
+```
+
+
+Kyle Cutting^1^ and Scott Miller^2^
+
+^1^National Park Service
+Wrangell St. Elias National Park and Preserve
+Copper Center, Alaska
+
+^2^Arctic Inventory and Monitoring Network
+240 W. 5th Ave
+Anchorage, Alaska 99501
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+`r CurrentDate`
+
+
+U.S. Department of the Interior
+
+National Park Service
+
+Natural Resource Stewardship and Science
+
+Fort Collins, Colorado
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Executive summary
+
+Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, Haliaeetus leucocephalus, Population dynamics, monitoring, `r SurveyYear`
+
+```{r echo=FALSE}
+
+
+# # Get the dates of the occupancy surveys
+Sql = paste("SELECT  [Year]
+      ,[MinOccupancySurveyDate]
+      ,[MaxOccupancySurveyDate]
+      ,[NumberOfOccupancySurveyDays]
+      ,[MinProductivitySurveyDate]
+      ,[MaxProductivitySurveyDate]
+      ,[NumberOfProductivitySurveyDays]
+  FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] where year = ",SurveyYear," Order By Year",sep = '')
+Summary_SurveyDatesByYearDataFrame = GetDataFrameFromDatabase(Sql)
+
+
+
+
+# Retrieve the annual summary information from the database
+Sql = paste("SELECT[Year], [Nests located]
+      ,[Occupied]
+      ,NestsNotFound_P
+	  ,NestsNotCounted_P
+      ,[Successful]
+      ,[Young fledged] 
+      ,[% nest success] 
+      ,[Young/occupied nest]
+      ,[Young/successful nest] 
+      FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYear] 
+      WHERE [QC level = Raw] = 0 And
+      Year =  ",SurveyYear)
+
+Summary_SuccessByYearDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+TransposedSummary_SurveyDatesByYearDataFrame = t(Summary_SuccessByYearDataFrame) # Transpose the data frame
+colnames(TransposedSummary_SurveyDatesByYearDataFrame)[1] = "Result" # Rename the wierd first column with no name that R stuck in
+
+```
+
+
+The Copper River in Wrangell-St. Elias National Park and Preserve (WRST) contains a high density of nesting Bald Eagles in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In 2022 we conducted an aerial bald eagle productivity survey in and around the park. Methods followed Putera J. and Miller S.D., 2018. Occupancy surveys were flown from `r Summary_SurveyDatesByYearDataFrame$MinOccupancySurveyDate` to `r Summary_SurveyDatesByYearDataFrame$MaxOccupancySurveyDate`, followed by productivity surveys from `r Summary_SurveyDatesByYearDataFrame$MinProductivitySurveyDate` to `r Summary_SurveyDatesByYearDataFrame$MaxProductivitySurveyDate`. We observed `r Summary_SuccessByYearDataFrame$'Nests located'` nests, of which `r Summary_SuccessByYearDataFrame$'Occupied'` were occupied (`r Summary_SuccessByYearDataFrame$'Occupied'/Summary_SuccessByYearDataFrame$'Nests located' * 100`%). Productivity surveys recorded `r Summary_SuccessByYearDataFrame$'Successful'` nests produced young (`r Summary_SuccessByYearDataFrame$'Successful'/Summary_SuccessByYearDataFrame$'Occupied' * 100 `% of occupied nests). Successful nests resulted in `r Summary_SuccessByYearDataFrame$'Young fledged'` young, an average of `r Summary_SuccessByYearDataFrame$'Young/successful nest'` young per nest.  `r Summary_SuccessByYearDataFrame$NestsNotFound_P` nests were not found., and `r Summary_SuccessByYearDataFrame$NestsNotCounted` were not counted. 
+
+# Introduction
+
+The Copper River in WRST contains a high density of nesting Bald Eagles in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor in Wrangell-St. Elias National Park and Preserve (WRST). Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. Further, Bald Eagles nesting along the Copper River in WRST may face increasing disturbance due to forestry activities and increased human visitation.
+
+Bald eagles (*Haliaeetus leucocephalus*) are common breeders in Wrangell-St Elias National Park and Preserve (WRST). Most nests are concentrated along the Copper River and its major tributaries. Potential threats to nesting eagles include habitat loss, human disturbance, and exposure to environmental contaminants that may affect reproduction or survival. Specific threats include highway construction from Chitina to Cordova, development and timber harvest on private lands along rivers, lakes, and coastal areas, potential increases in commercial and recreational fishing on the Copper River and its tributaries, camping or other recreational or subsistence access/use activities (including use of ATVs and jet boats) in sensitive breeding areas, and environmental contamination from local and global sources. Pollution is of special concern in the wake of the Exxon-Valdez oil spill that occurred near Valdez in March of 1989. The TransAlaska Pipeline crosses three tributaries of the Copper River---the Gulkana, Tazlina, and Klutina rivers. These rivers are also crossed by the Richardson Highway, which is heavily used by tanker trucks carrying petroleum products to and from the Valdez terminal. These are all important reasons to document long-term trends on population density and reproductive rates for bald eagles.
+
+# Objectives
+
+The objectives of the monitoring efforts are to: 
+
+* Document the annual changes in occupancy of bald eagles, 
+
+* Document the annual changes in productivity of bald eagle nests, and 
+
+* Document any changes in distribution of bald eagle nests.
+
+# Methods
+
+## Study Area
+
+Five survey areas were defined along major riverways, and are described in Kozie (1996):
+
+1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (Picea glauca) is the predominant tree species, with balsam poplar (Populus balsamifera) common on the lower stretches. The Middle Copper River (MCR, 179km) extends from the Chistochina River south to the confluence of the Chitina River. 
+
+2.) The Middle Copper River (MCR) contains a mixture of both white spruce and balsam poplar, with poplar being slightly more common. The Copper River begins to braid along the MCR.
+
+2.) The Lower Copper River (LCR) section (188km) extends from the Chitina River south to Miles Lake. The LCR is dominated by cottonwood along the river. The vegetation also begins to exhibit coastal influences, adding several coastal species including black cottonwood (Populus trichocarpa), Sitka spruce (Picea sitchensis), and mountain hemlock (Tsuga mertensiana). The Copper River is wide and more braided than the upper sections, with steep canyons on either side. Nesting begins consistently later along the LCR and is probably influenced by the numerous glaciers in the area which delay snow melt and maintain the area in a winter-like state several weeks after green up has begun to occur to the north.
+
+3.) The Bremner River (45km) is surveyed from its confluence with the Copper River to the forks by Threemile Canyon, and has similar characteristics as the LCR.
+
+4.) The Chitina River (116km) is surveyed from the confluence of the Copper River to where the river becomes braided above the Tana River. White spruce dominate the trees, with cottonwood becoming scarce in the upper reaches.
+
+A total of 609 km of riverways are surveyed annually, amounting to over 1200km of surveys.
+
+```{r echo=FALSE}
+
+# Make a map of nests and rivers
+
+# Get nest locations
+Sql = paste("SELECT Nests.[Lon-NAD83], Nests.[Lat-NAD83]
+FROM     Dataset_Productivity INNER JOIN
+                  Nests ON Dataset_Productivity.Nest_ID = Nests.Nest_ID
+WHERE  (Dataset_Productivity.Year = ",SurveyYear,") AND (Nests.[Lon-NAD83] < 0) AND (Nests.[Lat-NAD83] > 0)",sep='')
+
+# Get the points for the survey year from the database
+NestsDataFrame = GetDataFrameFromDatabase(Sql)
+
+# Build a SpatialPoints object. Only Lon/Lat columns allowed
+NestsSpatialPoints = SpatialPoints(NestsDataFrame)
+
+# Get the rivers shapefile
+Rivers <- readOGR(dsn="C:/Work/GIS Common Layers", layer="MajorRiversGCS" )
+
+# Get the rivers shapefile
+ParksShp <- readOGR(dsn="C:/Work/GIS Common Layers", layer="AKParks" )
+
+# Make a coordinate system
+crs <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+proj4string(NestsSpatialPoints) <- crs  # define projection system of our data
+
+# Plot the points
+Title = paste("Bald eagles productivity survey nest locations, ",SurveyYear)
+plot(NestsSpatialPoints, axes=TRUE, main=Title, pch = 19)
+plot(Rivers, add=TRUE, axes="true", col="LightBlue")
+plot(ParksShp, add=TRUE)
+
+```
+
+Figure 1. Map of the Copper River drainage and tributaries showing locations of nests recorded during the `r SurveyYear` bald eagles monitoring survey.
+
+## Surveys
+
+Two aerial surveys were conducted---one to document territorial occupancy, and one to document productivity. Surveys were flown using a small airplane flying at low level (\<100m AGL) and low speed (\<100 kph), with one experienced observer. Flight paths followed the river's edge, with the opposite side covered on the return trip. In most cases, the relatively narrow riparian corridor allowed adequate coverage with a single pass on each side of the river. Where the corridor widened, multiple passes were made to adequately evaluate the available habitat.
+
+For all new nests located, the following information was collected:
+
+a) Location (waypoint number associated whit lat/long via handheld Global Positioning System (GPS) receiver---Garmin Map 76S),
+b) Count of adult birds,\
+c) Behavior of adults (incubating, perched),
+d) Number of eggs observed,
+e) Number of nestlings,
+f) Species of nest tree (Populus spp., Picea spp.),
+g) Whether tree was alive or dead, and 
+h) Nest status (good, poor, remnant, gone).
+
+All information except latitude/longitude was recorded on field forms. All nests still intact from the previous year's surveys were checked for occupancy during the occupancy survey. Information recorded for located nests include:
+
+a) Count of adult birds,
+b) Behavior of adults, and
+c) Number of eggs or nestlings observed.
+
+During the second survey, all nest locations collected during prior surveys were checked for productivity. Territorial occupancy was defined based on a bird in the nest in incubating posture or two adult birds at a nest or in the nest tree (Postupalsky 1974). For the productivity survey, all nests observed with an incubating bird or two adult birds at a nest during the occupancy survey were checked to determine nest outcome. Multiple passes were commonly needed to count chicks, particularly in the Lower Copper area where cottonwoods are more common, and leaves make counting chicks difficult. 
+
+# Results
+
+## Overall productivity
+
+Table 1. Nest productivity summary, `r SurveyYear` bald eagles survey.
+
+```{r echo=FALSE}
+kable(TransposedSummary_SurveyDatesByYearDataFrame) # Output the transposed table
+
+```
+
+## Productivity by river segment
+
+Table 2. Productivity by river segment, `r SurveyYear`.
+```{r echo=FALSE}
+
+# Retrieve the annual summary information from the database
+Sql = paste("SELECT 
+-- [Year],
+      [RiverSegment]
+      ,[NestsLocated]
+      ,[Occupied]
+      ,[Unknown occupancy]
+      ,[Successful]
+      ,[Young fledged]
+      ,[% nest success]
+      ,[Young/occupied nest]
+      ,[Young/successful nest]
+  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
+  WHERE Year = ",SurveyYear)
+
+Summary_SuccessByYearAndRiverSegmentDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+tSummary_SuccessByYearAndRiverSegmentDataFrame = t(Summary_SuccessByYearAndRiverSegmentDataFrame)
+kable(tSummary_SuccessByYearAndRiverSegmentDataFrame)
+
+```
+
+
+
+
+## Historical results
+### Copper River valley
+Table 3. Long term productivity.
+```{r echo=FALSE}
+# Retrieve the annual summary information from the database
+Sql = paste("SELECT TOP (1000) Year, [Nests located], Occupied, [Unknown productivity], Successful, [Young fledged], [% nest success], [Young/occupied nest], [Young/successful nest]
+FROM     Summary_SuccessByYear
+ORDER BY Year")
+
+Summary_SuccessByYearDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+kable(Summary_SuccessByYearDataFrame)
+
+```
+
+Data from 1989-1996 is from Kozie, 1996.
+
+### Long term productivity by river segment
+
+Table 4. Long term productivity by year and river segment. 
+
+```{r echo=FALSE}
+# Retrieve the annual summary information from the database
+Sql = paste("SELECT 
+[Year],
+      [RiverSegment]
+      ,[NestsLocated]
+      ,[Occupied]
+      ,[Unknown occupancy]
+      ,[Successful]
+      ,[Young fledged]
+      ,[% nest success]
+      ,[Young/occupied nest]
+      ,[Young/successful nest]
+  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
+  ORDER BY RiverSegment,Year")
+
+Summary_SuccessByYearAndRiverSegmentDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+kable(Summary_SuccessByYearAndRiverSegmentDataFrame)
+```
+
+
+
+### Nest success by year: Entire study area
+
+```{r echo=FALSE}
+
+# Plot nest success by year
+plot(Summary_SuccessByYearDataFrame$Year,Summary_SuccessByYearDataFrame$`% nest success`, type = "l",
+     main = "Nest success by year",
+     xlab = "Year",
+     ylab = "% success")
+
+# Linear model
+lm = lm(formula = `% nest success` ~ Year, data = Summary_SuccessByYearDataFrame)
+
+# Plot fitted regression line
+abline(lm)
+lmSummary = summary(lm)
+
+
+
+```
+
+Figure 2. Nest success by year: Entire study area. 
+
+### Young per occupied nest by year: Entire study area
+
+```{r echo=FALSE}
+
+# Plot young per occupied nest by year
+plot(Summary_SuccessByYearDataFrame$Year,Summary_SuccessByYearDataFrame$`Young/occupied nest`, type = "l",
+     main = "Young per occupied nest by year",
+     xlab = "Year",
+     ylab = "Young per occupied nest")
+
+# Linear model
+lm <- lm(Summary_SuccessByYearDataFrame$`Young/occupied nest` ~ Summary_SuccessByYearDataFrame$Year)
+
+#add fitted regression line
+abline(lm)
+summary(lm)
+```
+
+Figure 3. Young per occupied nest by year: Entire study area
+
+### Young per successful nest by year: : Entire study area
+
+```{r echo=FALSE}
+
+# Plot young per successful nest by year
+plot(Summary_SuccessByYearDataFrame$Year,Summary_SuccessByYearDataFrame$`Young/successful nest`, type = "l",
+     main = "Young per successful nest by year",
+     xlab = "Year",
+     ylab = "Young per successful nest")
+lm <- lm(Summary_SuccessByYearDataFrame$`Young/successful nest` ~ Summary_SuccessByYearDataFrame$Year)
+
+#add fitted regression line
+abline(lm)
+summary(lm)
+
+```
+
+Figure 4. Young per successful nest by year: : Entire study area
+
+### Dispersion of successful nests
+
+```{r echo=FALSE}
+
+GetSuccessfulNestDispersion <- function(SurveyYear) {
+
+   Sql = paste("select Nest_ID,RiverSegment,[Lat-NAD83] as Latitude,[Lon-NAD83] as Longitude,NumYng,StatusCode_P,Nest_O from Dataset_Productivity where year = ",SurveyYear," And StatusCode_P = 'S' And [Lat-NAD83]>50",sep='')
+  Prod = GetDataFrameFromDatabase(Sql)
+
+  # AK
+  AK <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer="AK_GCS" )
+  AK.df = fortify(AK)
+
+  # Major Rivers
+  Rivers <- readOGR(dsn="C:/Work/GIS Common Layers", layer="MajorRiversGCS" )
+  Rivers.df = fortify(Rivers)
+
+  # Alaska Parks
+  AKParksLayer  <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer ="AKParks_reprojected")
+  AKParks.df <- fortify(AKParksLayer)
+
+  title = paste("Dispersion of successful nests, ", SurveyYear)
+
+  ggplot(Prod, aes(x = Longitude, y = Latitude)) +
+    labs(title = title) +
+    stat_density2d(aes(), alpha=0.5, geom="polygon",contour_var = "density", show.legend = TRUE)+
+    geom_point(colour="red")+
+    #geom_text(aes(label = Nest_ID)) +
+    coord_equal() +
+    xlab('Longitude') +
+    ylab('Latitude')+
+    theme_minimal() +
+    coord_sf(xlim = c(-145.8, -142.5), ylim = c(60, 63.5), expand = FALSE) +
+    geom_path(data=AKParks.df,aes(x=long, y=lat,group=group), colour="grey50") +
+    geom_path(data=Rivers.df,aes(x=long, y=lat,group=group), colour="black")
+
+    # geom_path(data=AK.df,aes(x=long, y=lat,group=group), colour="grey")
+    # geom_text(data = Prod, mapping = aes(x = Longitude, y = Latitude, label = StatusCode_P, group = NA), cex = 4, col = "white")
+
+}
+
+
+# for (Year in 2004:2022) {
+#   map = GetSuccessfulNestDispersion(Year)
+#   ggsave(paste(Year,".bmp"), map, path = "C:/temp/zBAEA Successful Nest Dispersion")
+# }
+
+# Show the dispersion map for the current year
+ GetSuccessfulNestDispersion(SurveyYear)
+
+```
+
+```{r echo=FALSE}
+
+Sql = paste("select Year,Nest_ID,RiverSegment,[Lat-NAD83] as Latitude,[Lon-NAD83] as Longitude,NumYng,StatusCode_P,Nest_O from Dataset_Productivity WHERE  StatusCode_P = 'S'",sep='')
+Prod = GetDataFrameFromDatabase(Sql)
+head(Prod)
+# AK
+AK <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer="AK_GCS" )
+AK.df = fortify(AK)
+
+# Major Rivers
+Rivers <- readOGR(dsn="C:/Work/GIS Common Layers", layer="MajorRiversGCS" )
+Rivers.df = fortify(Rivers)
+
+# Alaska Parks
+AKParksLayer  <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer ="AKParks_reprojected")
+AKParks.df <- fortify(AKParksLayer)
+
+# Dispersion chart title
+title = paste("Dispersion of successful nests, 2004-2022")
+
+ggplot(Prod, aes(x = Longitude, y = Latitude)) + 
+  labs(title = title) +
+  stat_density2d(aes(), alpha=0.5, geom="polygon",contour_var = "density", show.legend = TRUE)+
+  geom_point(colour="red")+
+  #geom_text(aes(label = Nest_ID)) + 
+  coord_equal() + 
+  #xlab('Longitude') + 
+  #ylab('Latitude')+
+  theme_minimal() +
+  coord_sf(xlim = c(-145.8, -142.5), ylim = c(60, 63.5), expand = FALSE) +
+  geom_path(data=AKParks.df,aes(x=long, y=lat,group=group), colour="grey50") +
+  geom_path(data=Rivers.df,aes(x=long, y=lat,group=group), colour="black") + 
+  facet_wrap(~ Year) +
+  theme(axis.text.x=element_blank(), #remove x axis labels
+        axis.ticks.x=element_blank(), #remove x axis ticks
+        axis.text.y=element_blank(),  #remove y axis labels
+        axis.ticks.y=element_blank()  #remove y axis ticks
+        )
+
+
+
+```
+
+Figure X. Dispersion of successful nests in the Copper River valley, `r SurveyYear`
+
+# Discussion
+
+# Acknowledgements
+
+# Literature cited
+
+# Appendices
+
+## Appendix A: `r SurveyYear` Survey Data
+[to be added]
+```{r echo=FALSE}
+
+# # # Get the dates of the occupancy surveys
+# Sql = paste("SELECT *
+# FROM     Dataset_Productivity
+# WHERE  (Year = ",SurveyYear,")
+# ORDER BY Nest_ID ",sep='')
+# df = GetDataFrameFromDatabase(Sql)
+# 
+# # Output the table
+# kable(df)
+```
+
+## Appendix B: Columns descriptions
+[to be added]
+```{r echo=FALSE}
+
+# # Get the dates of the occupancy surveys
+# Sql = paste("SELECT [Table],[Column]
+#       ,[ColumnDescription]
+#      
+#   FROM [CAKN_BaldEagles].[dbo].[DatabaseColumnsDescriptions]
+# where [Table] in ('Nests','SurveyData')
+# order by [Table], [Column]",sep='')
+# df = GetDataFrameFromDatabase(Sql)
+# 
+# # Output the table
+# kable(df)
+```
