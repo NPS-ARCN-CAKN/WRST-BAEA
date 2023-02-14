@@ -364,22 +364,22 @@ Data from 1989-1996 is from Kozie, 1996.
 Table 4. Long term productivity by year and river segment. 
 
 ```{r echo=FALSE}
-# Retrieve the annual summary information from the database
-Sql = paste("SELECT 
-[Year],
-      [RiverSegment]
-      ,[NestsLocated]
-      ,[Occupied]
-      ,[Unknown occupancy]
-      ,[Successful]
-      ,[Young fledged]
-      ,[% nest success]
-      ,[Young/occupied nest]
-      ,[Young/successful nest]
-  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
-  ORDER BY RiverSegment,Year")
-
-Summary_SuccessByYearAndRiverSegmentDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+# # Retrieve the annual summary information from the database
+# Sql = paste("SELECT 
+# [Year],
+#       [RiverSegment]
+#       ,[NestsLocated]
+#       ,[Occupied]
+#       ,[Unknown occupancy]
+#       ,[Successful]
+#       ,[Young fledged]
+#       ,[% nest success]
+#       ,[Young/occupied nest]
+#       ,[Young/successful nest]
+#   FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
+#   ORDER BY RiverSegment,Year")
+# 
+# Summary_SuccessByYearAndRiverSegmentDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
 kable(Summary_SuccessByYearAndRiverSegmentDataFrame)
 ```
 
