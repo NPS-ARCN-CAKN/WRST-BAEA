@@ -331,7 +331,23 @@ kable(tSuccessByYearRiverSegmentDF)
 
 
 ## Historical results
-### Copper River valley
+
+
+```{r echo=FALSE}
+# Retrieve the annual summary information from the database
+MeanSuccessRate = mean(SuccessByYearDF$`% nest success`)
+MeanYoung = mean(SuccessByYearDF$`Young fledged`)
+MeanYoungPerOccupiedNest = mean(SuccessByYearDF$`Young/occupied nest`)
+MeanYoungPerSuccessfulNest = mean(SuccessByYearDF$`Young/successful nest`)
+MeanSuccessByYear = mean(SuccessByYearDF$`% nest success`)
+MinSuccessByYear = min(SuccessByYearDF$`% nest success`)
+MaxSuccessByYear = max(SuccessByYearDF$`% nest success`)
+MinYear = min(SuccessByYearDF$Year) 
+MaxYear = max(SuccessByYearDF$Year)
+```
+
+Bald eagle monitoring has been done from 1989 through `r MaxYear` (Table 3). Mean nest success is `r MeanSuccessByYear`% ranging between `r MinSuccessByYear`% and `r MaxSuccessByYear`%. 
+
 Table 3. Long term productivity.
 ```{r echo=FALSE}
 # Retrieve the annual summary information from the database
@@ -341,20 +357,7 @@ kable(SuccessByYearDF)
 
 Data from 1989-1996 is from Kozie, 1996.
 
-### Long term productivity by river segment
 
-Table 4. Long term productivity by year and river segment. 
-
-```{r echo=FALSE}
-# Show the historical results by year and river segment
-SuccessByYearRiverSegmentDF[ , c(1,2)]  <- SuccessByYearRiverSegmentDF[ , c(2,1)] # Swap the year, river segment columns
-colnames(SuccessByYearRiverSegmentDF)[c(1,2)] <- colnames(SuccessByYearRiverSegmentDF)[c(2,1)]
-kable(SuccessByYearRiverSegmentDF)
-```
-
-
-
-### Nest success by year: Entire study area
 
 ```{r echo=FALSE}
 
@@ -380,13 +383,26 @@ boxplot(SuccessByYearDF$`% nest success`)
 R2 = summary(SuccessByYearLM)$adj.r.squared
 p = summary(SuccessByYearLM)$coefficients["Year", "Pr(>|t|)"]
 paste("R^2 = ",R2," p = ",p)
-MeanSuccessByYear = mean(SuccessByYearDF$`% nest success`)
-MinYear = min(SuccessByYearDF$Year) 
-MaxYear = max(SuccessByYearDF$Year)
+
 
 ```
 
 Figure 2. Nest success by year: Entire study area (R^2=`r R2`, p=`r p`). 
+
+### Long term productivity by river segment
+
+Table 4. Long term productivity by year and river segment. 
+
+```{r echo=FALSE}
+# Show the historical results by year and river segment
+SuccessByYearRiverSegmentDF[ , c(1,2)]  <- SuccessByYearRiverSegmentDF[ , c(2,1)] # Swap the year, river segment columns
+colnames(SuccessByYearRiverSegmentDF)[c(1,2)] <- colnames(SuccessByYearRiverSegmentDF)[c(2,1)]
+kable(SuccessByYearRiverSegmentDF)
+```
+
+
+
+
 
 Mean success from `r MinYear` to `r MaxYear`  is `r MeanSuccessByYear`.
 
