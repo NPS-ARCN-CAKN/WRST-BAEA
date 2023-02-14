@@ -176,9 +176,6 @@ Sql = paste("SELECT  [Year]
   FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] where year = ",SurveyYear," Order By Year",sep = '')
 Summary_SurveyDatesByYearDataFrame = GetDataFrameFromDatabase(Sql)
 
-
-
-
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT[Year], [Nests located]
       ,[Occupied]
@@ -194,8 +191,7 @@ Sql = paste("SELECT[Year], [Nests located]
       Year =  ",SurveyYear)
 
 Summary_SuccessByYearDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
-TransposedSummary_SurveyDatesByYearDataFrame = t(Summary_SuccessByYearDataFrame) # Transpose the data frame
-colnames(TransposedSummary_SurveyDatesByYearDataFrame)[1] = "Result" # Rename the wierd first column with no name that R stuck in
+
 
 ```
 
@@ -302,7 +298,13 @@ During the second survey, all nest locations collected during prior surveys were
 Table 1. Nest productivity summary, `r SurveyYear` bald eagles survey.
 
 ```{r echo=FALSE}
-kable(TransposedSummary_SurveyDatesByYearDataFrame) # Output the transposed table
+library(data.table)
+# Show the productivity metrics for the current year in a vertical table
+# Filter on the current year and remove the Year column
+CurrentSummaryDF = Summary_SuccessByYearDataFrame[Summary_SuccessByYearDataFrame$Year == SurveyYear,-1]
+CurrentSummaryDF_t = t(CurrentSummaryDF)# Transpose the data frame
+colnames(CurrentSummaryDF_t)[1] = "Result" # Change the wierd first column with no name that R stuck in to Result
+kable(CurrentSummaryDF_t) # Output the transposed table
 
 ```
 
@@ -364,22 +366,7 @@ Data from 1989-1996 is from Kozie, 1996.
 Table 4. Long term productivity by year and river segment. 
 
 ```{r echo=FALSE}
-# # Retrieve the annual summary information from the database
-# Sql = paste("SELECT 
-# [Year],
-#       [RiverSegment]
-#       ,[NestsLocated]
-#       ,[Occupied]
-#       ,[Unknown occupancy]
-#       ,[Successful]
-#       ,[Young fledged]
-#       ,[% nest success]
-#       ,[Young/occupied nest]
-#       ,[Young/successful nest]
-#   FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
-#   ORDER BY RiverSegment,Year")
-# 
-# Summary_SuccessByYearAndRiverSegmentDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+# Show the historical results by year and river segment
 kable(Summary_SuccessByYearAndRiverSegmentDataFrame)
 ```
 
