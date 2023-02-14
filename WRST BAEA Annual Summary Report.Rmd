@@ -74,28 +74,17 @@ library(ggmap)
 
 ```{r echo=FALSE}
 
-
-
-
-
-
-
-
-
-
-# Gather data to present later in the report
+# Current date
 CurrentDate = Sys.Date() # Get the current date
 
 # ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
 # Contact data manager for server and database details.
 # ConnectionString to the bald eagles Sql Server database
 BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna_dev;Database=CAKN_BaldEagles;trusted_connection=YES"
-#BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01,58468;Database=CAKN_BaldEagles;trusted_connection=YES"
-
 
 # Database connection to the eagles database
 BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString)
-#BaldEaglesConnection = odbcConnect("CAKN_BaldEagles Dev")
+
 # Function to return data frames from SQL database queries
 GetDataFrameFromDatabase <- function(Sql) {
    return(sqlQuery(BaldEaglesConnection, Sql))
@@ -163,9 +152,9 @@ Fort Collins, Colorado
 Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, Haliaeetus leucocephalus, Population dynamics, monitoring, `r SurveyYear`
 
 ```{r echo=FALSE}
+# Gather info to present in the text below
 
-
-# # Get the dates of the occupancy surveys
+# Get the dates of the occupancy surveys
 Sql = paste("SELECT  [Year]
       ,[MinOccupancySurveyDate]
       ,[MaxOccupancySurveyDate]
@@ -174,7 +163,7 @@ Sql = paste("SELECT  [Year]
       ,[MaxProductivitySurveyDate]
       ,[NumberOfProductivitySurveyDays]
   FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] where year = ",SurveyYear," Order By Year",sep = '')
-Summary_SurveyDatesByYearDataFrame = GetDataFrameFromDatabase(Sql)
+DatesDF = GetDataFrameFromDatabase(Sql)
 
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT[Year], [Nests located]
@@ -186,17 +175,15 @@ Sql = paste("SELECT[Year], [Nests located]
       ,[% nest success] 
       ,[Young/occupied nest]
       ,[Young/successful nest] 
-      FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYear] 
-      WHERE [QC level = Raw] = 0 And
-      Year =  ",SurveyYear)
-
-Summary_SuccessByYearDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
-
+      FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYear]")
+SuccessByYearDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+# Filter on the current year and remove the Year column
+CurrentSummaryDF = SuccessByYearDF[SuccessByYearDF$Year == SurveyYear,-1]
 
 ```
 
 
-The Copper River in Wrangell-St. Elias National Park and Preserve (WRST) contains a high density of nesting Bald Eagles in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In 2022 we conducted an aerial bald eagle productivity survey in and around the park. Methods followed Putera J. and Miller S.D., 2018. Occupancy surveys were flown from `r Summary_SurveyDatesByYearDataFrame$MinOccupancySurveyDate` to `r Summary_SurveyDatesByYearDataFrame$MaxOccupancySurveyDate`, followed by productivity surveys from `r Summary_SurveyDatesByYearDataFrame$MinProductivitySurveyDate` to `r Summary_SurveyDatesByYearDataFrame$MaxProductivitySurveyDate`. We observed `r Summary_SuccessByYearDataFrame$'Nests located'` nests, of which `r Summary_SuccessByYearDataFrame$'Occupied'` were occupied (`r Summary_SuccessByYearDataFrame$'Occupied'/Summary_SuccessByYearDataFrame$'Nests located' * 100`%). Productivity surveys recorded `r Summary_SuccessByYearDataFrame$'Successful'` nests produced young (`r Summary_SuccessByYearDataFrame$'Successful'/Summary_SuccessByYearDataFrame$'Occupied' * 100 `% of occupied nests). Successful nests resulted in `r Summary_SuccessByYearDataFrame$'Young fledged'` young, an average of `r Summary_SuccessByYearDataFrame$'Young/successful nest'` young per nest.  `r Summary_SuccessByYearDataFrame$NestsNotFound_P` nests were not found., and `r Summary_SuccessByYearDataFrame$NestsNotCounted` were not counted. 
+The Copper River in Wrangell-St. Elias National Park and Preserve (WRST) contains a high density of nesting Bald Eagles in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In 2022 we conducted an aerial bald eagle productivity survey in and around the park. Methods followed Putera J. and Miller S.D., 2018. Occupancy surveys were flown from `r DatesDF$MinOccupancySurveyDate` to `r DatesDF$MaxOccupancySurveyDate`, followed by productivity surveys from `r DatesDF$MinProductivitySurveyDate` to `r DatesDF$MaxProductivitySurveyDate`. We observed `r CurrentSummaryDF$'Nests located'` nests, of which `r CurrentSummaryDF$'Occupied'` were occupied (`r CurrentSummaryDF$'Occupied'/CurrentSummaryDF$'Nests located' * 100`%). Productivity surveys recorded `r CurrentSummaryDF$'Successful'` nests produced young (`r CurrentSummaryDF$'Successful'/CurrentSummaryDF$'Occupied' * 100 `% of occupied nests). Successful nests resulted in `r CurrentSummaryDF$'Young fledged'` young, an average of `r CurrentSummaryDF$'Young/successful nest'` young per nest.  `r CurrentSummaryDF$NestsNotFound_P` nests were not found., and `r CurrentSummaryDF$NestsNotCounted` were not counted. 
 
 # Introduction
 
@@ -300,8 +287,7 @@ Table 1. Nest productivity summary, `r SurveyYear` bald eagles survey.
 ```{r echo=FALSE}
 library(data.table)
 # Show the productivity metrics for the current year in a vertical table
-# Filter on the current year and remove the Year column
-CurrentSummaryDF = Summary_SuccessByYearDataFrame[Summary_SuccessByYearDataFrame$Year == SurveyYear,-1]
+
 CurrentSummaryDF_t = t(CurrentSummaryDF)# Transpose the data frame
 colnames(CurrentSummaryDF_t)[1] = "Result" # Change the wierd first column with no name that R stuck in to Result
 kable(CurrentSummaryDF_t) # Output the transposed table
@@ -316,8 +302,8 @@ Table 2. Productivity by river segment, `r SurveyYear`.
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT 
       [Year],
-      [RiverSegment]
-      ,[NestsLocated]
+      [RiverSegment] as [River segment]
+      ,[NestsLocated] as [Nests located]
       ,[Occupied]
       ,[Unknown occupancy]
       ,[Successful]
@@ -327,18 +313,17 @@ Sql = paste("SELECT
       ,[Young/successful nest]
   FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment] ORDER BY RiverSegment,Year")
 
-
-
-Summary_SuccessByYearAndRiverSegmentDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+SuccessByYearRiverSegmentDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
 
 # Filter the above data frame on the current year and omit the first (Year) column
-CurrentSummaryDataFrame = Summary_SuccessByYearAndRiverSegmentDataFrame[Summary_SuccessByYearAndRiverSegmentDataFrame$Year == SurveyYear,2:10]
+CurrentSummaryDataFrame = SuccessByYearRiverSegmentDF[SuccessByYearRiverSegmentDF$Year == SurveyYear,2:10]
+CurrentSummaryDataFrame = sapply(CurrentSummaryDataFrame, as.character) # Change all the values to strings so R does not pad zeroes to the integer values
 
 # Transpose the data
-tSummary_SuccessByYearAndRiverSegmentDataFrame = t(CurrentSummaryDataFrame)
-
+tSuccessByYearRiverSegmentDF = t(CurrentSummaryDataFrame)
+colnames(tSuccessByYearRiverSegmentDF)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
 # Output the data
-kable(tSummary_SuccessByYearAndRiverSegmentDataFrame)
+kable(tSuccessByYearRiverSegmentDF)
 
 ```
 
@@ -350,12 +335,7 @@ kable(tSummary_SuccessByYearAndRiverSegmentDataFrame)
 Table 3. Long term productivity.
 ```{r echo=FALSE}
 # Retrieve the annual summary information from the database
-Sql = paste("SELECT TOP (1000) Year, [Nests located], Occupied, [Unknown productivity], Successful, [Young fledged], [% nest success], [Young/occupied nest], [Young/successful nest]
-FROM     Summary_SuccessByYear
-ORDER BY Year")
-
-Summary_SuccessByYearDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
-kable(Summary_SuccessByYearDataFrame)
+kable(SuccessByYearDF)
 
 ```
 
@@ -367,7 +347,9 @@ Table 4. Long term productivity by year and river segment.
 
 ```{r echo=FALSE}
 # Show the historical results by year and river segment
-kable(Summary_SuccessByYearAndRiverSegmentDataFrame)
+SuccessByYearRiverSegmentDF[ , c(1,2)]  <- SuccessByYearRiverSegmentDF[ , c(2,1)] # Swap the year, river segment columns
+colnames(SuccessByYearRiverSegmentDF)[c(1,2)] <- colnames(SuccessByYearRiverSegmentDF)[c(2,1)]
+kable(SuccessByYearRiverSegmentDF)
 ```
 
 
@@ -377,54 +359,69 @@ kable(Summary_SuccessByYearAndRiverSegmentDataFrame)
 ```{r echo=FALSE}
 
 # Plot nest success by year
-plot(Summary_SuccessByYearDataFrame$Year,Summary_SuccessByYearDataFrame$`% nest success`, type = "l",
+plot(SuccessByYearDF$Year,SuccessByYearDF$`% nest success`, type = "l",
      main = "Nest success by year",
      xlab = "Year",
      ylab = "% success")
 
 # Linear model
-lm = lm(formula = `% nest success` ~ Year, data = Summary_SuccessByYearDataFrame)
+SuccessByYearLM = lm(formula = `% nest success` ~ Year, data = SuccessByYearDF)
 
 # Plot fitted regression line
-abline(lm)
-lmSummary = summary(lm)
+abline(SuccessByYearLM)
 
+# Output a summary of the linear model
+summary(SuccessByYearLM)
 
+# Boxplot the nest success, look for outlier dots
+boxplot(SuccessByYearDF$`% nest success`)
+
+# Store the r squared, p and other statistics to show later
+R2 = summary(SuccessByYearLM)$adj.r.squared
+p = summary(SuccessByYearLM)$coefficients["Year", "Pr(>|t|)"]
+paste("R^2 = ",R2," p = ",p)
+MeanSuccessByYear = mean(SuccessByYearDF$`% nest success`)
+MinYear = min(SuccessByYearDF$Year) 
+MaxYear = max(SuccessByYearDF$Year)
 
 ```
 
-Figure 2. Nest success by year: Entire study area. 
+Figure 2. Nest success by year: Entire study area (R^2=`r R2`, p=`r p`). 
+
+Mean success from `r MinYear` to `r MaxYear`  is `r MeanSuccessByYear`.
 
 ### Young per occupied nest by year: Entire study area
 
 ```{r echo=FALSE}
 
 # Plot young per occupied nest by year
-plot(Summary_SuccessByYearDataFrame$Year,Summary_SuccessByYearDataFrame$`Young/occupied nest`, type = "l",
+plot(SuccessByYearDF$Year,SuccessByYearDF$`Young/occupied nest`, type = "l",
      main = "Young per occupied nest by year",
      xlab = "Year",
      ylab = "Young per occupied nest")
 
 # Linear model
-lm <- lm(Summary_SuccessByYearDataFrame$`Young/occupied nest` ~ Summary_SuccessByYearDataFrame$Year)
+YoungPerOccNestLM <- lm(SuccessByYearDF$`Young/occupied nest` ~ SuccessByYearDF$Year)
 
 #add fitted regression line
-abline(lm)
-summary(lm)
+abline(YoungPerOccNestLM)
+summary(YoungPerOccNestLM)
 ```
 
 Figure 3. Young per occupied nest by year: Entire study area
+
+
 
 ### Young per successful nest by year: : Entire study area
 
 ```{r echo=FALSE}
 
 # Plot young per successful nest by year
-plot(Summary_SuccessByYearDataFrame$Year,Summary_SuccessByYearDataFrame$`Young/successful nest`, type = "l",
+plot(SuccessByYearDF$Year,SuccessByYearDF$`Young/successful nest`, type = "l",
      main = "Young per successful nest by year",
      xlab = "Year",
      ylab = "Young per successful nest")
-lm <- lm(Summary_SuccessByYearDataFrame$`Young/successful nest` ~ Summary_SuccessByYearDataFrame$Year)
+lm <- lm(SuccessByYearDF$`Young/successful nest` ~ SuccessByYearDF$Year)
 
 #add fitted regression line
 abline(lm)
@@ -488,37 +485,37 @@ GetSuccessfulNestDispersion <- function(SurveyYear) {
 
 ```{r echo=FALSE}
 
-Sql = paste("select Year,Nest_ID,RiverSegment,[Lat-NAD83] as Latitude,[Lon-NAD83] as Longitude,NumYng,StatusCode_P,Nest_O from Dataset_Productivity WHERE  StatusCode_P = 'S'",sep='')
-Prod = GetDataFrameFromDatabase(Sql)
-head(Prod)
-# AK
-AK <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer="AK_GCS" )
-AK.df = fortify(AK)
-
-# Major Rivers
-Rivers <- readOGR(dsn="C:/Work/GIS Common Layers", layer="MajorRiversGCS" )
-Rivers.df = fortify(Rivers)
-
-# Alaska Parks
-AKParksLayer  <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer ="AKParks_reprojected")
-AKParks.df <- fortify(AKParksLayer)
-
-# Dispersion chart title
-title = paste("Dispersion of successful nests, 2004-2022")
-
-ggplot(Prod, aes(x = Longitude, y = Latitude)) + 
-  labs(title = title) +
-  stat_density2d(aes(), alpha=0.5, geom="polygon",contour_var = "density", show.legend = TRUE)+
-  geom_point(colour="red")+
-  #geom_text(aes(label = Nest_ID)) + 
-  coord_equal() + 
-  #xlab('Longitude') + 
-  #ylab('Latitude')+
-  theme_minimal() +
-  coord_sf(xlim = c(-145.8, -142.5), ylim = c(60, 63.5), expand = FALSE) +
-  geom_path(data=AKParks.df,aes(x=long, y=lat,group=group), colour="grey50") +
-  geom_path(data=Rivers.df,aes(x=long, y=lat,group=group), colour="black") + 
-  facet_wrap(~ Year)
+# Sql = paste("select Year,Nest_ID,RiverSegment,[Lat-NAD83] as Latitude,[Lon-NAD83] as Longitude,NumYng,StatusCode_P,Nest_O from Dataset_Productivity WHERE  StatusCode_P = 'S'",sep='')
+# Prod = GetDataFrameFromDatabase(Sql)
+# head(Prod)
+# # AK
+# AK <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer="AK_GCS" )
+# AK.df = fortify(AK)
+# 
+# # Major Rivers
+# Rivers <- readOGR(dsn="C:/Work/GIS Common Layers", layer="MajorRiversGCS" )
+# Rivers.df = fortify(Rivers)
+# 
+# # Alaska Parks
+# AKParksLayer  <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer ="AKParks_reprojected")
+# AKParks.df <- fortify(AKParksLayer)
+# 
+# # Dispersion chart title
+# title = paste("Dispersion of successful nests, 2004-2022")
+# 
+# ggplot(Prod, aes(x = Longitude, y = Latitude)) + 
+#   labs(title = title) +
+#   stat_density2d(aes(), alpha=0.5, geom="polygon",contour_var = "density", show.legend = TRUE)+
+#   geom_point(colour="red")+
+#   #geom_text(aes(label = Nest_ID)) + 
+#   coord_equal() + 
+#   #xlab('Longitude') + 
+#   #ylab('Latitude')+
+#   theme_minimal() +
+#   coord_sf(xlim = c(-145.8, -142.5), ylim = c(60, 63.5), expand = FALSE) +
+#   geom_path(data=AKParks.df,aes(x=long, y=lat,group=group), colour="grey50") +
+#   geom_path(data=Rivers.df,aes(x=long, y=lat,group=group), colour="black") + 
+#   facet_wrap(~ Year)
 
 
 
