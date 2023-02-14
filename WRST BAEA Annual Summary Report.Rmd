@@ -313,7 +313,7 @@ Table 2. Productivity by river segment, `r SurveyYear`.
 
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT 
--- [Year],
+      [Year],
       [RiverSegment]
       ,[NestsLocated]
       ,[Occupied]
@@ -323,11 +323,19 @@ Sql = paste("SELECT
       ,[% nest success]
       ,[Young/occupied nest]
       ,[Young/successful nest]
-  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
-  WHERE Year = ",SurveyYear)
+  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment] ORDER BY RiverSegment,Year")
+
+
 
 Summary_SuccessByYearAndRiverSegmentDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
-tSummary_SuccessByYearAndRiverSegmentDataFrame = t(Summary_SuccessByYearAndRiverSegmentDataFrame)
+
+# Filter the above data frame on the current year and omit the first (Year) column
+CurrentSummaryDataFrame = Summary_SuccessByYearAndRiverSegmentDataFrame[Summary_SuccessByYearAndRiverSegmentDataFrame$Year == SurveyYear,2:10]
+
+# Transpose the data
+tSummary_SuccessByYearAndRiverSegmentDataFrame = t(CurrentSummaryDataFrame)
+
+# Output the data
 kable(tSummary_SuccessByYearAndRiverSegmentDataFrame)
 
 ```
@@ -523,12 +531,7 @@ ggplot(Prod, aes(x = Longitude, y = Latitude)) +
   coord_sf(xlim = c(-145.8, -142.5), ylim = c(60, 63.5), expand = FALSE) +
   geom_path(data=AKParks.df,aes(x=long, y=lat,group=group), colour="grey50") +
   geom_path(data=Rivers.df,aes(x=long, y=lat,group=group), colour="black") + 
-  facet_wrap(~ Year) +
-  theme(axis.text.x=element_blank(), #remove x axis labels
-        axis.ticks.x=element_blank(), #remove x axis ticks
-        axis.text.y=element_blank(),  #remove y axis labels
-        axis.ticks.y=element_blank()  #remove y axis ticks
-        )
+  facet_wrap(~ Year)
 
 
 
