@@ -51,21 +51,11 @@ library(RODBC)
 library(knitr)
 library(ggplot2)
 library(sp)
-library(rgdal)
 library(data.table)
 library(dplyr)
-library(rgdal)
+library(terra)
 library(sf)
-library(english)
-
-
-
-
-# setwd("< directory with all your files>")
-library(rgdal)         # for readOGR(...)
-library(ggplot2)
 library(RColorBrewer)  # for brewer.pal(...)
-library(ggplot2)
 library(ggmap)
 
 ```
@@ -80,10 +70,14 @@ CurrentDate = Sys.Date() # Get the current date
 # ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
 # Contact data manager for server and database details.
 # ConnectionString to the bald eagles Sql Server database
-BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna_dev;Database=CAKN_BaldEagles;trusted_connection=YES"
+BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna;Database=CAKN_BaldEagles;trusted_connection=YES"
 
 # Database connection to the eagles database
 BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString)
+
+# Set the path to shapefiles used in the map
+ShpPath = "C:/Work/GIS Common Layers/"
+
 
 # Function to return data frames from SQL database queries
 GetDataFrameFromDatabase <- function(Sql) {
@@ -236,20 +230,26 @@ NestsDataFrame = GetDataFrameFromDatabase(Sql)
 NestsSpatialPoints = SpatialPoints(NestsDataFrame)
 
 # Get the rivers shapefile
-Rivers <- readOGR(dsn="C:/Work/GIS Common Layers", layer="MajorRiversGCS" )
+Rivers = terra::vect(paste(ShpPath,"Alaska_Rivers_1M.shp",sep=""))
 
 # Get the rivers shapefile
-ParksShp <- readOGR(dsn="C:/Work/GIS Common Layers", layer="AKParks" )
+ParksShp = terra::vect(paste(ShpPath,"/GCS/AKParks_reprojected.shp",sep=""))
 
 # Make a coordinate system
 crs <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 proj4string(NestsSpatialPoints) <- crs  # define projection system of our data
 
+
 # Plot the points
 Title = paste("Bald eagles productivity survey nest locations, ",SurveyYear)
-plot(NestsSpatialPoints, axes=TRUE, main=Title, pch = 19)
-plot(Rivers, add=TRUE, axes="true", col="LightBlue")
-plot(ParksShp, add=TRUE)
+plot(ParksShp,col="lightgreen", axes=TRUE, main=Title,ylim = c(60.5, 62.9),xlim = c(-146, -142))
+plot(Rivers, add=TRUE, col="LightBlue")
+text(x = -143.3, y = 61.7, "Wrangell-St. Elias 
+     National Park and Preserve",cex=.7) 
+plot(NestsSpatialPoints, pch = 19, col = "Red",add=TRUE,cex=0.6)
+
+
+
 
 ```
 
@@ -451,51 +451,53 @@ Figure 4. Young per successful nest by year: : Entire study area
 
 ```{r echo=FALSE}
 
-GetSuccessfulNestDispersion <- function(SurveyYear) {
+#GetSuccessfulNestDispersion <- function(SurveyYear) {
 
-   Sql = paste("select Nest_ID,RiverSegment,[Lat-NAD83] as Latitude,[Lon-NAD83] as Longitude,NumYng,StatusCode_P,Nest_O from Dataset_Productivity where year = ",SurveyYear," And StatusCode_P = 'S' And [Lat-NAD83]>50",sep='')
-  Prod = GetDataFrameFromDatabase(Sql)
+Sql = paste("SELECT   Nest_ID, RiverSegment, [Lat-NAD83] AS Latitude, [Lon-NAD83] AS Longitude, NumYng, 
+CASE WHEN StatusCode_P = 'IF' THEN 'Failed' WHEN StatusCode_P = 'S' THEN 'Succeeded' ELSE NULL END AS Status
+, StatusCode_P
+, Nest_O
+FROM         Dataset_Productivity
+WHERE     (Year = ",SurveyYear,") AND ([Lat-NAD83] IS NOT NULL) AND ([Lat-NAD83] > 50) AND (StatusCode_P IN ('S', 'IF'))
+",sep='')
+ProductivityDataFrame = GetDataFrameFromDatabase(Sql)
 
-  # AK
-  AK <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer="AK_GCS" )
-  AK.df = fortify(AK)
+#   # Get the rivers shapefile
+# Rivers = terra::vect(paste(ShpPath,"Alaska_Rivers_1M.shp",sep=""))
+# # Get the rivers shapefile
+# ParksShp = terra::vect(paste(ShpPath,"/GCS/AKParks_reprojected.shp",sep=""))
+# # Make a coordinate system
 
-  # Major Rivers
-  Rivers <- readOGR(dsn="C:/Work/GIS Common Layers", layer="MajorRiversGCS" )
-  Rivers.df = fortify(Rivers)
+title = paste("Dispersion of successful nests, ", SurveyYear)
 
-  # Alaska Parks
-  AKParksLayer  <- readOGR(dsn="C:/Work/GIS Common Layers/GCS", layer ="AKParks_reprojected")
-  AKParks.df <- fortify(AKParksLayer)
+# Query out the successful nests
+SuccessFulNestsDataFrame = subset(ProductivityDataFrame,StatusCode_P == 'S')
 
-  title = paste("Dispersion of successful nests, ", SurveyYear)
+Parks = read_sf("C:/Work/GIS Common Layers/GCS/AKParks_reprojected.shp")
+Rivers = read_sf("C:/Work/GIS Common Layers/Alaska_Rivers_1M.shp")
+AK  = read_sf("C:/Work/GIS Common Layers/GCS/AK_GCS_poly.shp")
 
-  ggplot(Prod, aes(x = Longitude, y = Latitude)) +
-    labs(title = title) +
-    stat_density2d(aes(), alpha=0.5, geom="polygon",contour_var = "density", show.legend = TRUE)+
-    geom_point(colour="red")+
-    #geom_text(aes(label = Nest_ID)) +
-    coord_equal() +
-    xlab('Longitude') +
-    ylab('Latitude')+
-    theme_minimal() +
-    coord_sf(xlim = c(-145.8, -142.5), ylim = c(60, 63.5), expand = FALSE) +
-    geom_path(data=AKParks.df,aes(x=long, y=lat,group=group), colour="grey50") +
-    geom_path(data=Rivers.df,aes(x=long, y=lat,group=group), colour="black")
+ggplot(data=ProductivityDataFrame) +
+  geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
+  geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
+  geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
+  geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +
+  
+  #geom_density_2d_filled(data=SuccessFulNestsDataFrame,aes(x = Longitude, y = Latitude), alpha=0.5,contour_var = "density",show.legend = FALSE,xlim = c(-180, -100), ylim = c(55, 65)) +
+  
+  labs(title = title) +
+  geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status)) +
+  scale_color_manual(values = c("Succeeded" = "green", "Failed" = "red")) +
+  #stat_density2d(data=SuccessFulNestsDataFrame,aes(x = Longitude, y = Latitude), alpha=0.5,contour_var = "density",    show.legend = TRUE) +
 
-    # geom_path(data=AK.df,aes(x=long, y=lat,group=group), colour="grey")
-    # geom_text(data = Prod, mapping = aes(x = Longitude, y = Latitude, label = StatusCode_P, group = NA), cex = 4, col = "white")
+  # Set the map limits
+  coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
+  xlab('Longitude') +
+  ylab('Latitude')+
+  theme_minimal() +
+  geom_text(aes(x = -144, y = 61.9, label = "Wrangell - St. Elias 
+National Park and Preserve"), size = 3, color = "black",stat = "unique")
 
-}
-
-
-# for (Year in 2004:2022) {
-#   map = GetSuccessfulNestDispersion(Year)
-#   ggsave(paste(Year,".bmp"), map, path = "C:/temp/zBAEA Successful Nest Dispersion")
-# }
-
-# Show the dispersion map for the current year
- GetSuccessfulNestDispersion(SurveyYear)
 
 ```
 
