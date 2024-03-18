@@ -55,9 +55,9 @@ library(data.table)
 library(dplyr)
 library(terra)
 library(sf)
-library(RColorBrewer)  # for brewer.pal(...)
+library(RColorBrewer) 
 library(ggmap)
-
+library(data.table)
 ```
 
 
@@ -84,7 +84,8 @@ GetDataFrameFromDatabase <- function(Sql) {
    return(sqlQuery(BaldEaglesConnection, Sql))
 }
 
-
+TableCounter = 1
+FigureCounter = 1
 ```
 
 
@@ -215,45 +216,54 @@ A total of 609 km of riverways are surveyed annually, amounting to over 1200km o
 
 ```{r echo=FALSE}
 
-# Make a map of nests and rivers
-
-# Get nest locations
-Sql = paste("SELECT Nests.[Lon-NAD83], Nests.[Lat-NAD83]
-FROM     Dataset_Productivity INNER JOIN
-                  Nests ON Dataset_Productivity.Nest_ID = Nests.Nest_ID
-WHERE  (Dataset_Productivity.Year = ",SurveyYear,") AND (Nests.[Lon-NAD83] < 0) AND (Nests.[Lat-NAD83] > 0)",sep='')
-
-# Get the points for the survey year from the database
-NestsDataFrame = GetDataFrameFromDatabase(Sql)
-
-# Build a SpatialPoints object. Only Lon/Lat columns allowed
-NestsSpatialPoints = SpatialPoints(NestsDataFrame)
-
-# Get the rivers shapefile
-Rivers = terra::vect(paste(ShpPath,"Alaska_Rivers_1M.shp",sep=""))
-
-# Get the rivers shapefile
-ParksShp = terra::vect(paste(ShpPath,"/GCS/AKParks_reprojected.shp",sep=""))
-
-# Make a coordinate system
-crs <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-proj4string(NestsSpatialPoints) <- crs  # define projection system of our data
+# Load shapefiles
+Parks = read_sf("C:/Work/GIS Common Layers/GCS/AKParks_reprojected.shp")
+Rivers = read_sf("C:/Work/GIS Common Layers/Alaska_Rivers_1M.shp")
+AK  = read_sf("C:/Work/GIS Common Layers/GCS/AK_GCS_poly.shp")
 
 
-# Plot the points
-Title = paste("Bald eagles productivity survey nest locations, ",SurveyYear)
-plot(ParksShp,col="lightgreen", axes=TRUE, main=Title,ylim = c(60.5, 62.9),xlim = c(-146, -142))
-plot(Rivers, add=TRUE, col="LightBlue")
-text(x = -143.3, y = 61.7, "Wrangell-St. Elias 
-     National Park and Preserve",cex=.7) 
-plot(NestsSpatialPoints, pch = 19, col = "Red",add=TRUE,cex=0.6)
-
+ggplot() +
+  
+  # Blue rectangle to make the background of the map blue
+  geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
+  
+  # Alaska outline
+  geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
+  
+  # Park boundary
+  geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
+  
+  # Rivers
+  geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +
+  
+  # Set the map limits
+  coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
+  xlab('Longitude') +
+  ylab('Latitude')+
+  
+  # Minimal theme
+  theme_minimal() +
+  
+  # WRST Label
+  geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
+National Park and Preserve"), size = 3, color = "black") +
+  
+  # Copper River label
+  geom_text(aes(x = -145.2, y = 61.5, label = "Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Chitina River label
+  geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
+  
+  # Bremner River label
+  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
+  
 
 
 
 ```
 
-Figure 1. Map of the Copper River drainage and tributaries showing locations of nests recorded during the `r SurveyYear` bald eagles monitoring survey.
+Figure `r FigureCounter`. Map of the Copper River drainage. Major tributaries in the survey area include the Chitina and Bremner rivers.
+`r FigureCounter = FigureCounter + 1`
 
 ## Surveys
 
@@ -280,12 +290,47 @@ During the second survey, all nest locations collected during prior surveys were
 
 # Results
 
+## Survey details
+```{r echo=FALSE}
+
+# Get the survey dates
+Sql = paste("SELECT 
+      --[Year],
+      [MinOccupancySurveyDate] as [Occupancy survey start]
+      ,[MaxOccupancySurveyDate] as [Occupancy survey end]
+      -- ,[NumberOfOccupancySurveyDays]
+      ,[MinProductivitySurveyDate] as [Productivity survey start]
+      ,[MaxProductivitySurveyDate] as [Productivity survey end]
+      -- ,[NumberOfProductivitySurveyDays]
+  FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
+  WHERE [Year]=",SurveyYear,sep="")
+
+SurveyDatesDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+OStart = SurveyDatesDF$`Occupancy survey start`
+OEnd = SurveyDatesDF$`Occupancy survey end`
+PStart = SurveyDatesDF$`Productivity survey start`
+PEnd = SurveyDatesDF$`Productivity survey end`
+```
+
+Bald eagle occupancy survey flights were conducted in WRST from `r format(OStart, format="%B %d, %Y ")` to `r format(OEnd
+, format="%B %d, %Y ")`. Follow-up productivity flights happened from `r format(PStart, format="%B %d, %Y ")` to `r format(PEnd, format="%B %d, %Y ")` (Table `r TableCounter`).  
+
+Table `r TableCounter`. Flight dates, `r SurveyYear`.
+```{r echo=FALSE}
+
+# Output the survey dates
+kable(t(SurveyDatesDF))
+
+TableCounter = TableCounter + 1
+```
+
+
 ## Overall productivity
 
 Table 1. Nest productivity summary, `r SurveyYear` bald eagles survey.
 
 ```{r echo=FALSE}
-library(data.table)
+
 # Show the productivity metrics for the current year in a vertical table
 
 CurrentSummaryDF_t = t(CurrentSummaryDF)# Transpose the data frame
@@ -376,8 +421,6 @@ abline(SuccessByYearLM)
 # Output a summary of the linear model
 summary(SuccessByYearLM)
 
-# Boxplot the nest success, look for outlier dots
-boxplot(SuccessByYearDF$`% nest success`)
 
 # Store the r squared, p and other statistics to show later
 R2 = summary(SuccessByYearLM)$adj.r.squared
@@ -451,8 +494,7 @@ Figure 4. Young per successful nest by year: : Entire study area
 
 ```{r echo=FALSE}
 
-#GetSuccessfulNestDispersion <- function(SurveyYear) {
-
+# Database query
 Sql = paste("SELECT   Nest_ID, RiverSegment, [Lat-NAD83] AS Latitude, [Lon-NAD83] AS Longitude, NumYng, 
 CASE WHEN StatusCode_P = 'IF' THEN 'Failed' WHEN StatusCode_P = 'S' THEN 'Succeeded' ELSE NULL END AS Status
 , StatusCode_P
@@ -460,44 +502,70 @@ CASE WHEN StatusCode_P = 'IF' THEN 'Failed' WHEN StatusCode_P = 'S' THEN 'Succee
 FROM         Dataset_Productivity
 WHERE     (Year = ",SurveyYear,") AND ([Lat-NAD83] IS NOT NULL) AND ([Lat-NAD83] > 50) AND (StatusCode_P IN ('S', 'IF'))
 ",sep='')
+
+# Get data frame from query
 ProductivityDataFrame = GetDataFrameFromDatabase(Sql)
 
-#   # Get the rivers shapefile
-# Rivers = terra::vect(paste(ShpPath,"Alaska_Rivers_1M.shp",sep=""))
-# # Get the rivers shapefile
-# ParksShp = terra::vect(paste(ShpPath,"/GCS/AKParks_reprojected.shp",sep=""))
-# # Make a coordinate system
-
+# Map Title
 title = paste("Dispersion of successful nests, ", SurveyYear)
 
-# Query out the successful nests
+# Query out just the successful nests
 SuccessFulNestsDataFrame = subset(ProductivityDataFrame,StatusCode_P == 'S')
 
-Parks = read_sf("C:/Work/GIS Common Layers/GCS/AKParks_reprojected.shp")
-Rivers = read_sf("C:/Work/GIS Common Layers/Alaska_Rivers_1M.shp")
-AK  = read_sf("C:/Work/GIS Common Layers/GCS/AK_GCS_poly.shp")
 
-ggplot(data=ProductivityDataFrame) +
+
+
+ggplot() +
+  
+  # Blue rectangle to make the background of the map blue
   geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
+  
+
+  
+  # Alaska outline
   geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
+  
+  # Park boundary
   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
+  
+  # Rivers
   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +
   
-  #geom_density_2d_filled(data=SuccessFulNestsDataFrame,aes(x = Longitude, y = Latitude), alpha=0.5,contour_var = "density",show.legend = FALSE,xlim = c(-180, -100), ylim = c(55, 65)) +
+    # Density kernel layer
+  stat_density_2d(
+  data=SuccessFulNestsDataFrame
+  ,geom = "polygon"
+  ,alpha = 0.2
+  ,aes(x = Longitude, y = Latitude, fill = ..level..)
+  ,show.legend = FALSE
+  ) +
+  guides(fill = guide_legend(title = "Density")) +
+  scale_fill_distiller(palette = "Greens", direction = 1) +
   
-  labs(title = title) +
+  # Productivity data
   geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status)) +
   scale_color_manual(values = c("Succeeded" = "green", "Failed" = "red")) +
-  #stat_density2d(data=SuccessFulNestsDataFrame,aes(x = Longitude, y = Latitude), alpha=0.5,contour_var = "density",    show.legend = TRUE) +
-
+  
   # Set the map limits
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
   xlab('Longitude') +
   ylab('Latitude')+
+  
+  # Minimal theme
   theme_minimal() +
-  geom_text(aes(x = -144, y = 61.9, label = "Wrangell - St. Elias 
-National Park and Preserve"), size = 3, color = "black",stat = "unique")
-
+  
+  # WRST Label
+  geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
+National Park and Preserve"), size = 3, color = "black") +
+  
+  # Copper River label
+  geom_text(aes(x = -145.2, y = 61.5, label = "Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Chitina River label
+  geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
+  
+  # Bremner River label
+  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
 ```
 
