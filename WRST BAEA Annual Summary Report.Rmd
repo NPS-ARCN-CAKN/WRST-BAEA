@@ -1,8 +1,6 @@
 ---
 output:
   html_document: default
-  pdf_document: default
-  word_document: default
 ---
 
 ```{=html}
@@ -34,7 +32,7 @@ output:
 ```{r echo=FALSE}
 
 # Set up report parameters here
-SurveyYear = 2022  # Set this to the report year
+SurveyYear = 2016  # Set this to the report year
 ```
 
 ---
@@ -54,12 +52,7 @@ library(knitr)
 library(ggplot2)
 library(sp)
 library(sf)
-# library(data.table)
-# library(dplyr)
-# library(terra)
 
-# library(RColorBrewer) 
-# library(ggmap)
 ```
 
 
@@ -535,13 +528,13 @@ ggplot() +
   # Rivers
   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +
   
-    # Density kernel layer
+  # Density kernel layer
   stat_density_2d(
   data=SuccessFulNestsDataFrame
   ,contour_var = "density"
   ,geom = "polygon"
   ,bins =  50
-  ,alpha = 0.1
+  ,alpha = 0.05
   ,aes(x = Longitude, y = Latitude, fill = ..level..)
   ,show.legend = TRUE) +
   guides(fill = guide_legend(title = "Density")) +
@@ -549,8 +542,8 @@ ggplot() +
   
   # Productive nests
   # Consider carefully whether to publish nest locations, or not
-  geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status)) +
-  scale_color_manual(values = c("Succeeded" = "green", "Failed" = "red")) +
+  # geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status)) +
+  # scale_color_manual(values = c("Succeeded" = "darkgreen", "Failed" = "red")) +
   
   # Set the map limits
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
@@ -574,7 +567,8 @@ National Park and Preserve"), size = 3, color = "black") +
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
 ```
-Figure `r FigureCounter`. Dispersion of successful bald eagle nests in the Copper River Valley in in `r SurveyYear`.
+
+Figure `r FigureCounter`. Dispersion of successful bald eagle nests in the Copper River Valley in in `r SurveyYear`. Green areas show areas where nests were most successful at producing young.
 
 ```{r echo=FALSE}
 
@@ -585,17 +579,34 @@ FigureCounter = FigureCounter + 1
 
 
 
-### Dispersion of offspring
+
+
 
 ```{r echo=FALSE}
 
+# Database query
+Sql = paste("SELECT   
+Year
+--Nest_ID
+--, RiverSegment
+,[Lat-NAD83] AS Latitude
+, [Lon-NAD83] AS Longitude
+, NumYng
+,CASE WHEN StatusCode_P = 'IF' THEN 'Failed' WHEN StatusCode_P = 'S' THEN 'Succeeded' ELSE NULL END AS Status
+, StatusCode_P
+--, Nest_O
+FROM         Dataset_Productivity
+WHERE   ([Lat-NAD83] IS NOT NULL) AND ([Lat-NAD83] > 50) AND (StatusCode_P IN ('S', 'IF'))
+",sep='')
+
+# Get data frame from query
+ProductivityDataFrame = GetDataFrameFromDatabase(Sql)
+
 # Map Title
-title = paste("Productivity, ", SurveyYear)
+title = paste("Dispersion of successful nests, ", SurveyYear)
 
 # Query out just the successful nests
-Yng1 = subset(ProductivityDataFrame,NumYng = 1)
-Yng2 = subset(ProductivityDataFrame,NumYng >= 2)
-
+SuccessFulNestsDataFrame = subset(ProductivityDataFrame,StatusCode_P == 'S')
 
 
 # Plot the nest success on a map
@@ -612,16 +623,28 @@ ggplot() +
   
   # Rivers
   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +
-
-  # Productivity data
-  geom_point(data=Yng1, aes(x = Longitude, y = Latitude,colour=NumYng),color="gold",size=2,legend=TRUE) +
-  geom_point(data=Yng2, aes(x = Longitude, y = Latitude,colour=NumYng),color="darkgreen",size=3,legend=TRUE) +
   
-
+  # Density kernel layer
+  stat_density_2d(
+  data=SuccessFulNestsDataFrame
+  ,contour_var = "density"
+  ,geom = "polygon"
+  ,bins =  50
+  ,alpha = 0.05
+  ,aes(x = Longitude, y = Latitude, fill = ..level..)
+  ,show.legend = TRUE) +
+  guides(fill = guide_legend(title = "Density")) +
+  scale_fill_distiller(palette = "Greens", direction = 1) +
+  
+  # Productive nests
+  # Consider carefully whether to publish nest locations, or not
+  # geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status)) +
+  # scale_color_manual(values = c("Succeeded" = "darkgreen", "Failed" = "red")) +
+  
   # Set the map limits
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
   xlab('Longitude') +
-  ylab('Latitude') +
+  ylab('Latitude')+
   
   # Minimal theme
   theme_minimal() +
@@ -637,13 +660,67 @@ National Park and Preserve"), size = 3, color = "black") +
   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
   
   # Bremner River label
-  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
-
-#kable(ProductiveNestsDataFrame)
+  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4") 
 
 ```
 
-Figure `r FigureCounter`. Dispersion of bald eagle productivity in the Copper River Valley in in `r SurveyYear`. Green dots show nests producing two young, gold dots show nests producing one young.
+
+
+```{r echo=FALSE, results = "hide"}
+# 
+# # Map Title
+# title = paste("Productivity, ", SurveyYear)
+# 
+# # Query out just the successful nests
+# Yng1 = subset(ProductivityDataFrame,NumYng == 1)
+# Yng2 = subset(ProductivityDataFrame,NumYng >= 2)
+# 
+# # Plot the nest success on a map
+# ggplot() +
+#   
+#   # Blue rectangle to make the background of the map blue
+#   geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
+#   
+#   # Alaska outline
+#   geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
+#   
+#   # Park boundary
+#   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
+#   
+#   # Rivers
+#   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +
+# 
+#   # Productivity data
+#   geom_point(data=Yng1, aes(x = Longitude, y = Latitude,colour=NumYng),color="gold",size=2,show.legend = TRUE) +
+#   geom_point(data=Yng2, aes(x = Longitude, y = Latitude,colour=NumYng),color="darkgreen",size=3,show.legend = TRUE) +
+#   scale_color_manual(values = c("Succeeded" = "green", "Failed" = "red")) +
+# 
+#   # Set the map limits
+#   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
+#   xlab('Longitude') +
+#   ylab('Latitude') +
+#   
+#   # Minimal theme
+#   theme_minimal() +
+#   
+#   # WRST Label
+#   geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
+# National Park and Preserve"), size = 3, color = "black") +
+#   
+#   # Copper River label
+#   geom_text(aes(x = -145.2, y = 61.5, label = "Copper River"), size = 3, color = "dodgerblue4") +
+#   
+#   # Chitina River label
+#   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
+#   
+#   # Bremner River label
+#   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
+# 
+# #kable(ProductiveNestsDataFrame)
+
+```
+
+
 
 ```{r echo=FALSE}
 # Increment the figure counter
