@@ -27,18 +27,6 @@ output:
     }
 </style>
 ```
-```{r echo=FALSE}
-
-# Set up report parameters here
-SurveyYear = 2009  # Set this to the report year
-```
-
----
-title: Annual Report on Vital Signs monitoring of distribution and abundance of Bald Eagles in Wrangell-St. Elias National Park and Preserve, `r SurveyYear` 
-output:
-  html_document:
-    df_print: paged
----
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
@@ -54,8 +42,8 @@ library(sf)
 
 ```{r echo=FALSE}
 
-# Current date
-CurrentDate = Sys.Date() # Get the current date
+# Set up report parameters here
+SurveyYear = 2023  # Set this to the desired report year
 
 # ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
 # Contact data manager for server and database details.
@@ -65,8 +53,24 @@ BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyug
 # Database connection to the eagles database
 BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString)
 
-# Set the path to shapefiles used in the map
+# Set the path to shapefiles used in the map, AK, Parks, Rivers, etc
 ShpPath = "C:/Work/GIS Common Layers/"
+
+
+```
+
+---
+title: Annual Report on Vital Signs monitoring of distribution and abundance of Bald Eagles in Wrangell-St. Elias National Park and Preserve, `r SurveyYear` 
+output:
+  html_document:
+    df_print: paged
+---
+
+
+```{r echo=FALSE}
+
+# Current date
+CurrentDate = Sys.Date() # Get the current date
 
 
 # Function to return data frames from SQL database queries
@@ -119,7 +123,7 @@ Sql = paste("SELECT  [Year]
 DatesDF = GetDataFrameFromDatabase(Sql)
 
 # Retrieve the annual summary information from the database
-Sql = paste("SELECT Year
+Sql = paste("  SELECT [Year]
 , Occupied
 , Successful
 , [% nest success]
@@ -127,13 +131,15 @@ Sql = paste("SELECT Year
 , [Young/occupied nest]
 , [Young/successful nest]
 , [Nests located]
-, NestsNotFound_P
-, NestsNotCounted_P
+, NestsNotFound_P as [Not found]
+, NestsNotCounted_P as [Not counted]
 FROM Summary_SuccessByYear
-ORDER BY Year")
+ORDER BY [Year]")
 SuccessByYearDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+
 # Filter on the current year and remove the Year column
 CurrentSummaryDF = SuccessByYearDF[SuccessByYearDF$Year == SurveyYear,-1]
+
 
 ```
 
@@ -207,8 +213,14 @@ ggplot() +
   geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
 National Park and Preserve"), size = 3, color = "black") +
   
-  # Copper River label
-  geom_text(aes(x = -145.2, y = 61.5, label = "Copper River"), size = 3, color = "dodgerblue4") +
+  # Upper Copper River label
+  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Middle Copper River label
+  geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Lower Copper River label
+  geom_text(aes(x = -145.2, y = 60.8, label = "Lower Copper River"), size = 3, color = "dodgerblue4") +
   
   # Chitina River label
   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
@@ -278,8 +290,13 @@ Table `r TableCounter`. Bald eagle survey flights, `r SurveyYear`.
 ```{r echo=FALSE}
 
 # Output the survey dates
-colnames(CurrentSummaryDF_t)[1] = "Date" # Change the wierd first column with no name that R stuck in to Result
-kable(t(SurveyDatesDF))
+SurveyDatesDF_t = t(SurveyDatesDF)
+
+# Change the goofy column header
+colnames(SurveyDatesDF_t) = 'Date'
+
+# Output the survey dates table
+kable(SurveyDatesDF_t)
 
 TableCounter = TableCounter + 1
 ```
@@ -292,9 +309,9 @@ Table `r TableCounter`. Nest productivity summary, `r SurveyYear` bald eagles su
 # Increment the table counter
 TableCounter = TableCounter + 1
 
-# Show the productivity metrics for the current year in a vertical table
+CurrentSummaryDF_t = t(CurrentSummaryDF)
 
-CurrentSummaryDF_t = t(CurrentSummaryDF)# Transpose the data frame
+# Show the productivity metrics for the current year in a vertical table
 colnames(CurrentSummaryDF_t)[1] = "Result" # Change the wierd first column with no name that R stuck in to Result
 kable(CurrentSummaryDF_t) # Output the transposed table
 
@@ -335,11 +352,11 @@ CurrentSummaryDataFrame = SuccessByYearRiverSegmentDF[SuccessByYearRiverSegmentD
 CurrentSummaryDataFrame = sapply(CurrentSummaryDataFrame, as.character) 
 
 # Transpose the data
-tSuccessByYearRiverSegmentDF = t(CurrentSummaryDataFrame)
-colnames(tSuccessByYearRiverSegmentDF)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
+SuccessByYearRiverSegmentDF_t = t(CurrentSummaryDataFrame)
+colnames(SuccessByYearRiverSegmentDF_t)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
 
 # Output the data
-kable(tSuccessByYearRiverSegmentDF)
+kable(SuccessByYearRiverSegmentDF_t)
 
 ```
 
@@ -388,7 +405,7 @@ ggplot() +
   # Density kernel layer
   stat_density_2d(
   data=SuccessFulNestsDataFrame
-  ,contour_var = "density"
+  ,contour_var = "count"
   ,geom = "polygon"
   ,bins =  50
   ,alpha = 0.1 # Transparancy is high so the features underneath show
@@ -417,8 +434,14 @@ ggplot() +
   geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
 National Park and Preserve"), size = 3, color = "black") +
   
-  # Copper River label
-  geom_text(aes(x = -145.2, y = 61.5, label = "Copper River"), size = 3, color = "dodgerblue4") +
+    # Upper Copper River label
+  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Middle Copper River label
+  geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Lower Copper River label
+  geom_text(aes(x = -145.2, y = 60.8, label = "Lower Copper River"), size = 3, color = "dodgerblue4") +
   
   # Chitina River label
   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
@@ -452,291 +475,161 @@ MinSuccessByYear = min(SuccessByYearDF$`% nest success`)
 MaxSuccessByYear = max(SuccessByYearDF$`% nest success`)
 MinYear = min(SuccessByYearDF$Year) 
 MaxYear = max(SuccessByYearDF$Year)
+
+TribsSuccessDF = subset(SuccessByYearRiverSegmentDF,SuccessByYearRiverSegmentDF$`River segment` != 'Chitina River Proper' & SuccessByYearRiverSegmentDF$`River segment` != 'Chitina River Tributaries')
+
+
 ```
 
 Bald eagle monitoring has been done from 1989 through `r MaxYear` (Table 3). Mean nest success is `r MeanSuccessByYear`% ranging between `r MinSuccessByYear`% and `r MaxSuccessByYear`%.
 
-Table `r TableCounter`. Long term productivity.
 
-```{r echo=FALSE}
-#Increment the table counter
-TableCounter = TableCounter + 1
-
-# Retrieve the annual summary information from the database
-kable(SuccessByYearDF)
-
-```
 
 Data from 1989-1996 is from Kozie, 1996.
 
 ```{r echo=FALSE}
 
-# Plot nest success by year
-plot(SuccessByYearDF$Year,SuccessByYearDF$`% nest success`, type = "l",
-     main = "Nest success by year",
-     xlab = "Year",
-     ylab = "% success")
-
 # Linear model
 SuccessByYearLM = lm(formula = `% nest success` ~ Year, data = SuccessByYearDF)
 
-# Plot fitted regression line
-abline(SuccessByYearLM)
-
-# Output a summary of the linear model
-#summary(SuccessByYearLM)
-
-
 # Store the r squared, p and other statistics to show later
 R2 = summary(SuccessByYearLM)$adj.r.squared
+R2 = format(round(R2, 2), nsmall = 2)
 p = summary(SuccessByYearLM)$coefficients["Year", "Pr(>|t|)"]
+p=format(round(p, 2), nsmall = 2)
+RegressionText = paste('R^2=',R2,' p=',p,sep='')
+
+#Mean nest success
+MeanNestSuccess = mean(SuccessByYearDF$`% nest success`)
+
+# Plot nest success by year
+# plot(SuccessByYearDF$Year,SuccessByYearDF$`% nest success`, type = "l",
+#      main = "Nest success by year",
+#      xlab = "Year",
+#      ylab = "% success"
+#      ,ylim=c(0,100)
+#      )
+# 
+# # Plot fitted regression line
+# abline(SuccessByYearLM)
+# text(x = median(SuccessByYearDF$Year, na.rm = TRUE), y = max(SuccessByYearDF$`% nest success`), label = RegressionText)
+
+# Output a summary of the linear model
+# summary(SuccessByYearLM)
+
+ggplot(data=SuccessByYearDF) +
+  geom_line(mapping = aes(x=Year,y=`% nest success`)) +
+  geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
+   # Minimal theme
+  theme_minimal() 
+
+ggplot(data=TribsSuccessDF) +
+  geom_line(mapping = aes(x=Year,y=`% nest success`)) +
+  geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
+   # Minimal theme
+  theme_minimal() +
+  facet_wrap(vars(`River segment`))
+
 
 ```
 
-Figure `r FigureCounter`. Nest success by year: Entire study area (R\^2=`r R2`, p=`r p`).
+Figure `r FigureCounter`. Nest success by year: Entire study area (Mean nest success = `r MeanNestSuccess`, R\^2=`r R2`, p=`r p`).
 
-### Long term productivity by river segment
-
-Table `r TableCounter`. Long term productivity by year and river segment.
-
-```{r echo=FALSE}
-# Increment the counters
-TableCounter = TableCounter + 1
-FigureCounter = FigureCounter + 1
-
-# Show the historical results by year and river segment
-SuccessByYearRiverSegmentDF[ , c(1,2)]  <- SuccessByYearRiverSegmentDF[ , c(2,1)] # Swap the year, river segment columns
-colnames(SuccessByYearRiverSegmentDF)[c(1,2)] <- colnames(SuccessByYearRiverSegmentDF)[c(2,1)]
-kable(SuccessByYearRiverSegmentDF)
-```
-
-Mean success from `r MinYear` to `r MaxYear` is `r MeanSuccessByYear`.
-
-### Young per occupied nest by year: Entire study area
 
 ```{r echo=FALSE}
 
-# Plot young per occupied nest by year
-plot(SuccessByYearDF$Year,SuccessByYearDF$`Young/occupied nest`, type = "l",
-     main = "Young per occupied nest by year",
-     xlab = "Year",
-     ylab = "Young per occupied nest")
+
 
 # Linear model
-YoungPerOccNestLM <- lm(SuccessByYearDF$`Young/occupied nest` ~ SuccessByYearDF$Year)
+# YoungPerOccNestLM <- lm(SuccessByYearDF$`Young/occupied nest` ~ SuccessByYearDF$Year)
+# 
+# # Store the r squared, p and other statistics to show later
+# R2 = summary(YoungPerOccNestLM)$adj.r.squared
+# R2 = format(round(R2, 2), nsmall = 2)
+# p = summary(YoungPerOccNestLM)$coefficients["SuccessByYearDF$Year", "Pr(>|t|)"]
+# p=format(round(p, 2), nsmall = 2)
+# RegressionText = paste('R^2=',R2,' p=',p,sep='')
+# 
+# # Plot young per occupied nest by year
+# # plot(SuccessByYearDF$Year,SuccessByYearDF$`Young/occupied nest`, type = "l",
+# #      main = "Young per occupied nest by year",
+# #      xlab = "Year",
+# #      ylab = "Young per occupied nest")
+# # #add fitted regression line
+# # abline(YoungPerOccNestLM)
+# # text(x = median(SuccessByYearDF$Year, na.rm = TRUE), y = max(SuccessByYearDF$`Young/occupied nest`), label = RegressionText)
+# 
+# # Print the regression summary
+# #summary(YoungPerOccNestLM)
+# 
+# ggplot(data=SuccessByYearDF) +
+#   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
+#   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
+#    # Minimal theme
+#   theme_minimal() 
 
-#add fitted regression line
-abline(YoungPerOccNestLM)
-summary(YoungPerOccNestLM)
-
-# Store the r squared, p and other statistics to show later
-R2 = summary(YoungPerOccNestLM)$adj.r.squared
-p = summary(YoungPerOccNestLM)$coefficients["SuccessByYearDF$Year", "Pr(>|t|)"]
-print(p)
 ```
 
-Figure `r FigureCounter`. Young per occupied nest by year, entire study area (R\^2=`r R2`, p=`r p`).
 
-### Young per successful nest by year: : Entire study area
+### Young per successful nest
 
 ```{r echo=FALSE}
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 
-# Plot young per successful nest by year
-plot(SuccessByYearDF$Year,SuccessByYearDF$`Young/successful nest`, type = "l",
-     main = "Young per successful nest by year",
-     xlab = "Year",
-     ylab = "Young per successful nest")
 lm <- lm(SuccessByYearDF$`Young/successful nest` ~ SuccessByYearDF$Year)
+# Store the r squared, p and other statistics to show later
+R2 = summary(lm)$adj.r.squared
+R2 = format(round(R2, 2), nsmall = 2)
+p = summary(lm)$coefficients["SuccessByYearDF$Year", "Pr(>|t|)"]
+p=format(round(p, 2), nsmall = 2)
+RegressionText = paste('R^2=',R2,' p=',p,sep='')
 
-#add fitted regression line
-abline(lm)
+# Plot young per successful nest by year
+# plot(SuccessByYearDF$Year,SuccessByYearDF$`Young/successful nest`, type = "l",
+#      main = "Young per successful nest by year",
+#      xlab = "Year",
+#      ylab = "Young per successful nest"
+#      ,ylim = c(0.5,3)
+#      )
+# 
+# #add fitted regression line
+# abline(lm)
+# text(x = median(SuccessByYearDF$Year, na.rm = TRUE), y = max(SuccessByYearDF$`Young/successful nest`)* 1.1, label = RegressionText)
 #summary(lm)
+
+ggplot(data=SuccessByYearDF) +
+  geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
+  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
+   # Minimal theme
+  theme_minimal() 
+
+ggplot(data=TribsSuccessDF) +
+  geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
+  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
+   # Minimal theme
+  theme_minimal() +
+  facet_wrap(vars(`River segment`))
 
 ```
 
 Figure `r FigureCounter`. Young per successful nest by year, entire study area.
 
-
-
-<!-- ```{r echo=FALSE} -->
-
-<!-- # Database query -->
-
-<!-- Sql = paste("SELECT    -->
-
-<!-- Year -->
-
-<!-- --Nest_ID -->
-
-<!-- --, RiverSegment -->
-
-<!-- ,[Lat-NAD83] AS Latitude -->
-
-<!-- , [Lon-NAD83] AS Longitude -->
-
-<!-- , NumYng -->
-
-<!-- ,CASE WHEN StatusCode_P = 'IF' THEN 'Failed' WHEN StatusCode_P = 'S' THEN 'Succeeded' ELSE NULL END AS Status -->
-
-<!-- , StatusCode_P -->
-
-<!-- --, Nest_O -->
-
-<!-- FROM         Dataset_Productivity -->
-
-<!-- WHERE   ([Lat-NAD83] IS NOT NULL) AND ([Lat-NAD83] > 50) AND (StatusCode_P IN ('S', 'IF')) -->
-
-<!-- ",sep='') -->
-
-<!-- # Get data frame from query -->
-
-<!-- ProductivityDataFrame = GetDataFrameFromDatabase(Sql) -->
-
-<!-- # Map Title -->
-
-<!-- title = paste("Dispersion of successful nests, ", SurveyYear) -->
-
-<!-- # Query out just the successful nests -->
-
-<!-- SuccessFulNestsDataFrame = subset(ProductivityDataFrame,StatusCode_P == 'S') -->
-
-<!-- # Plot the nest success on a map -->
-
-<!-- ggplot() + -->
-
-<!--   # Blue rectangle to make the background of the map blue -->
-
-<!--   geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") + -->
-
-<!--   # Alaska outline -->
-
-<!--   geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') + -->
-
-<!--   # Park boundary -->
-
-<!--   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) + -->
-
-<!--   # Rivers -->
-
-<!--   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') + -->
-
-<!--   # Density kernel layer -->
-
-<!--   stat_density_2d( -->
-
-<!--   data=SuccessFulNestsDataFrame -->
-
-<!--   ,contour_var = "density" -->
-
-<!--   ,geom = "polygon" -->
-
-<!--   ,bins =  50 -->
-
-<!--   ,alpha = 0.05 -->
-
-<!--   ,aes(x = Longitude, y = Latitude, fill = ..level..) -->
-
-<!--   ,show.legend = TRUE) + -->
-
-<!--   guides(fill = guide_legend(title = "Density")) + -->
-
-<!--   scale_fill_distiller(palette = "Greens", direction = 1) + -->
-
-<!--   # Productive nests -->
-
-<!--   # Consider carefully whether to publish nest locations, or not -->
-
-<!--   # geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status)) + -->
-
-<!--   # scale_color_manual(values = c("Succeeded" = "darkgreen", "Failed" = "red")) + -->
-
-<!--   # Set the map limits -->
-
-<!--   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) + -->
-
-<!--   xlab('Longitude') + -->
-
-<!--   ylab('Latitude')+ -->
-
-<!--   # Minimal theme -->
-
-<!--   theme_minimal() + -->
-
-<!--   # WRST Label -->
-
-<!--   geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias  -->
-
-<!-- National Park and Preserve"), size = 3, color = "black") + -->
-
-<!--   # Copper River label -->
-
-<!--   geom_text(aes(x = -145.2, y = 61.5, label = "Copper River"), size = 3, color = "dodgerblue4") + -->
-
-<!--   # Chitina River label -->
-
-<!--   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") + -->
-
-<!--   # Bremner River label -->
-
-<!--   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")  -->
-
-<!-- ``` -->
-
-```{r echo=FALSE, results = "hide"}
-# 
-# # Map Title
-# title = paste("Productivity, ", SurveyYear)
-# 
-# # Query out just the successful nests
-# Yng1 = subset(ProductivityDataFrame,NumYng == 1)
-# Yng2 = subset(ProductivityDataFrame,NumYng >= 2)
-# 
-# # Plot the nest success on a map
-# ggplot() +
-#   
-#   # Blue rectangle to make the background of the map blue
-#   geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
-#   
-#   # Alaska outline
-#   geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
-#   
-#   # Park boundary
-#   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
-#   
-#   # Rivers
-#   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +
-# 
-#   # Productivity data
-#   geom_point(data=Yng1, aes(x = Longitude, y = Latitude,colour=NumYng),color="gold",size=2,show.legend = TRUE) +
-#   geom_point(data=Yng2, aes(x = Longitude, y = Latitude,colour=NumYng),color="darkgreen",size=3,show.legend = TRUE) +
-#   scale_color_manual(values = c("Succeeded" = "green", "Failed" = "red")) +
-# 
-#   # Set the map limits
-#   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
-#   xlab('Longitude') +
-#   ylab('Latitude') +
-#   
-#   # Minimal theme
-#   theme_minimal() +
-#   
-#   # WRST Label
-#   geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
-# National Park and Preserve"), size = 3, color = "black") +
-#   
-#   # Copper River label
-#   geom_text(aes(x = -145.2, y = 61.5, label = "Copper River"), size = 3, color = "dodgerblue4") +
-#   
-#   # Chitina River label
-#   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
-#   
-#   # Bremner River label
-#   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
-# 
-# #kable(ProductiveNestsDataFrame)
-
+### Long term productivity by river segment
+
+```{r echo=FALSE}
+
+ggplot(data=TribsSuccessDF) +
+  geom_line(mapping = aes(x=Year,y=`% nest success`)) +
+  geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
+  facet_wrap(vars(`River segment`)) +
+   # Minimal theme
+  theme_minimal() 
 ```
+
+Figure `r FigureCounter`. Long term nest success by year and river segment.
+
+
 
 # Discussion
 
@@ -748,21 +641,32 @@ Kozie, 1996.
 
 # Appendices
 
-## Appendix A: `r SurveyYear` Survey Data
+## Appendix A: Long-term productivity data
 
-[to be added]
+Table `r TableCounter`. Long term productivity over the Copper River watershed.
 
 ```{r echo=FALSE}
+#Increment the table counter
+TableCounter = TableCounter + 1
 
-# # # Get the dates of the occupancy surveys
-# Sql = paste("SELECT *
-# FROM     Dataset_Productivity
-# WHERE  (Year <= ",SurveyYear,")
-# ORDER BY Nest_ID ",sep='')
-# df = GetDataFrameFromDatabase(Sql)
-# 
-# # Output the table
-# kable(df)
+# Retrieve the annual summary information from the database
+SuccessByYearDF_Char <- sapply(SuccessByYearDF, as.character)
+SuccessByYearDF_Char[is.na(SuccessByYearDF)] <- " "
+kable(SuccessByYearDF_Char)
+
+```
+
+Table `r TableCounter`. Long term productivity by river segment.
+
+```{r echo=FALSE}
+# Increment the counters
+TableCounter = TableCounter + 1
+FigureCounter = FigureCounter + 1
+
+# Show the historical results by year and river segment
+SuccessByYearRiverSegmentDF[ , c(1,2)]  <- SuccessByYearRiverSegmentDF[ , c(2,1)] # Swap the year, river segment columns
+colnames(SuccessByYearRiverSegmentDF)[c(1,2)] <- colnames(SuccessByYearRiverSegmentDF)[c(2,1)]
+kable(SuccessByYearRiverSegmentDF)
 ```
 
 ## Appendix B: Columns descriptions
