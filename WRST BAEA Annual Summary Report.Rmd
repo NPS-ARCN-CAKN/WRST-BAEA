@@ -315,6 +315,42 @@ kable(CurrentSummaryDF_t) # Output the transposed table
 
 ```
 
+```{r echo=FALSE, label="Summary (counts)"}
+
+
+# Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
+# a table, transpose it so it fits the report better, modify the header, and output
+# Because R stupidly adds decimal places to integer values when you transpose a table
+# I've found the only way to correctly output the summary items is to separated out the
+# integer columns into one transposed table, and decimal values to another.
+# This is the integer table. Decimal metrics reported further down
+SummaryCountsDF = CurrentSummaryDF[1:6] 
+SummaryCountsDF_t = t(SummaryCountsDF) # Transpose the table so it fits better in the report
+colnames(SummaryCountsDF_t)[1] = "Counts" # Change the wierd default first column name to something informative
+kable(SummaryCountsDF_t)
+
+# Increment the table counter
+TableCounter = TableCounter + 1
+```
+
+```{r echo=FALSE, label="Summary (calculated metrics)"}
+
+# Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
+# a table, transpose it so it fits the report better, modify the header, and output
+# Because R stupidly adds decimal places to integer values when you transpose a table
+# I've found the only way to correctly output the summary items is to separated out the
+# integer columns into one transposed table, and decimal values to another.
+# This is the decimal table. Integer counts reported above.
+SummaryCalcsDF = CurrentSummaryDF[7:9] # Get just the integer summary items
+SummaryCalcsDF_t = t(SummaryCalcsDF) # Transpose the table so it fits better in the report
+colnames(SummaryCalcsDF_t)[1] = "Metrics" # Change the wierd default first column name to something informative
+kable(SummaryCalcsDF_t)
+
+# Increment the table counter
+TableCounter = TableCounter + 1
+
+```
+
 ## Survey results summary by river segment
 
 Table `r TableCounter` shows nest success metrics by river segment for the `r SurveyYear` bald eagle survey in WRST. Nest succes, as defined as an eagle pair producing offspring observable during the late summer productivity survey, is shown in Figure `r FigureCounter`.
