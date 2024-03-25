@@ -301,22 +301,9 @@ TableCounter = TableCounter + 1
 
 ## Survey results summary
 
-Table `r TableCounter`. Nest productivity summary, `r SurveyYear` bald eagles survey.
-
-```{r echo=FALSE}
-# Increment the table counter
-TableCounter = TableCounter + 1
-
-CurrentSummaryDF_t = t(CurrentSummaryDF)
-
-# Show the productivity metrics for the current year in a vertical table
-colnames(CurrentSummaryDF_t)[1] = "Result" # Change the wierd first column with no name that R stuck in to Result
-kable(CurrentSummaryDF_t) # Output the transposed table
-
-```
+Table `r TableCounter`. Results, `r SurveyYear` bald eagles survey.
 
 ```{r echo=FALSE, label="Summary (counts)"}
-
 
 # Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
 # a table, transpose it so it fits the report better, modify the header, and output
@@ -332,6 +319,8 @@ kable(SummaryCountsDF_t)
 # Increment the table counter
 TableCounter = TableCounter + 1
 ```
+
+Table `r TableCounter`. Metrics, `r SurveyYear` bald eagles survey.
 
 ```{r echo=FALSE, label="Summary (calculated metrics)"}
 
