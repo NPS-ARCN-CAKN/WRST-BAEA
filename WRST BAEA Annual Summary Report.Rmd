@@ -63,7 +63,7 @@ ShpPath = "C:/Work/GIS Common Layers/"
 title: Annual Report on Vital Signs monitoring of distribution and abundance of Bald Eagles in Wrangell-St. Elias National Park and Preserve, `r SurveyYear` 
 output:
   html_document:
-    df_print: paged
+
 ---
 
 
@@ -260,8 +260,6 @@ During the second survey, all nest locations collected during prior surveys were
 
 # Results
 
-## Survey details
-
 ```{r echo=FALSE}
 
 # Get the survey dates
@@ -301,7 +299,7 @@ kable(SurveyDatesDF_t)
 TableCounter = TableCounter + 1
 ```
 
-## Overall productivity
+## Survey results summary
 
 Table `r TableCounter`. Nest productivity summary, `r SurveyYear` bald eagles survey.
 
@@ -317,7 +315,7 @@ kable(CurrentSummaryDF_t) # Output the transposed table
 
 ```
 
-## Productivity by river segment
+## Survey results summary by river segment
 
 Table `r TableCounter` shows nest success metrics by river segment for the `r SurveyYear` bald eagle survey in WRST. Nest succes, as defined as an eagle pair producing offspring observable during the late summer productivity survey, is shown in Figure `r FigureCounter`.
 
