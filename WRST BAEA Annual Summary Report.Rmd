@@ -124,15 +124,15 @@ DatesDF = GetDataFrameFromDatabase(Sql)
 
 # Retrieve the annual summary information from the database
 Sql = paste("  SELECT [Year]
+, [Nests located]
 , Occupied
 , Successful
-, [% nest success]
-, [Young fledged]
-, [Young/occupied nest]
-, [Young/successful nest]
-, [Nests located]
 , NestsNotFound_P as [Not found]
 , NestsNotCounted_P as [Not counted]
+, [Young fledged]
+, [% nest success]
+, [Young/occupied nest]
+, [Young/successful nest]
 FROM Summary_SuccessByYear
 ORDER BY [Year]")
 SuccessByYearDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
