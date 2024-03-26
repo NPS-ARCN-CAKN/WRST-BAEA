@@ -306,7 +306,8 @@ NF = CurrentSummaryDF$`Not found`
 NC = CurrentSummaryDF$`Not counted`
 YngPerOccupiedNest = CurrentSummaryDF$`Young/occupied nest`
 YngPerNest = CurrentSummaryDF$`Young/successful nest`
-PctSuccessful = CurrentSummaryDF$`% nest success`
+PctOccupied = round((CurrentSummaryDF$Occupied - CurrentSummaryDF$`Unknown occupancy`) / CurrentSummaryDF$`Nests located` * 100,1)
+PctSuccessful = round(CurrentSummaryDF$Successful / (CurrentSummaryDF$Occupied - CurrentSummaryDF$`Unknown productivity`) * 100,1)
 
 # Increment the table counter
 TableCounter = TableCounter + 1
@@ -314,7 +315,7 @@ TableCounter = TableCounter + 1
 
 ## Survey results summary
 
-Results for the `r SurveyYear` bald eagle survey in WRST appear in Table `r TableCounter`. Success and productivity metrics are reported in Table `r TableCounter + 1`. `r NestsLocated` nests were located during the survey. Of these nests, `r Occupied` were occupied and `r Successful` produced young.
+Results for the `r SurveyYear` bald eagle survey in WRST appear in Table `r TableCounter`. Success and productivity metrics are reported in Table `r TableCounter + 1`. `r NestsLocated` nests were located during the survey. Of these nests, `r Occupied` were occupied (`r PctOccupied`%) as of the productivity survey. Of occupied nests `r Successful` produced young (`r PctSuccessful`% success rate, `r YngPerNest` mean young per nest).
 
 Table `r TableCounter`. Results, `r SurveyYear` bald eagles survey.
 
@@ -330,12 +331,7 @@ SummaryCountsDF_t = t(SummaryCountsDF) # Transpose the table so it fits better i
 colnames(SummaryCountsDF_t)[1] = "Counts" # Change the wierd default first column name to something informative
 kable(SummaryCountsDF_t)
 
-# Increment the table counter
-TableCounter = TableCounter + 1
 ```
-
-Table `r TableCounter`. Metrics, `r SurveyYear` bald eagles survey.
-
 ```{r echo=FALSE, label="Summary (calculated metrics)"}
 
 # Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
@@ -437,19 +433,20 @@ ggplot() +
   # Park boundary
   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
   
-
-  
   # Density kernel layer
-  stat_density_2d(
-  data=SuccessFulNestsDataFrame
-  ,contour_var = "count"
-  ,geom = "polygon"
-  ,bins =  50
-  ,alpha = 0.1 # Transparancy is high so the features underneath show
-  ,aes(x = Longitude, y = Latitude, fill = ..level..)
-  ,show.legend = FALSE) + # Don't show the density values in the legend
-  guides(fill = guide_legend(title = "Density")) +
-  scale_fill_distiller(palette = "Greens", direction = 1) + # Kernel density color, etc.
+  # NOTE: Sometimes this layer doesn't convey high success very well
+  # 2023 had high success in upper copper, but the kernel density didn't really
+  # convey that.
+  # stat_density_2d(
+  # data=SuccessFulNestsDataFrame
+  # ,contour_var = "count"
+  # ,geom = "polygon"
+  # ,bins =  50
+  # ,alpha = 0.1 # Transparancy is high so the features underneath show
+  # ,aes(x = Longitude, y = Latitude, fill = ..level..)
+  # ,show.legend = FALSE) + # Don't show the density values in the legend
+  # guides(fill = guide_legend(title = "Density")) +
+  # scale_fill_distiller(palette = "Greens", direction = 1) + # Kernel density color, etc.
 
     # Rivers
   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +  
