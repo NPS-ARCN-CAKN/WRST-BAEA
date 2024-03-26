@@ -123,19 +123,21 @@ Sql = paste("SELECT  [Year]
 DatesDF = GetDataFrameFromDatabase(Sql)
 
 # Retrieve the annual summary information from the database
-Sql = paste("  SELECT [Year]
+Sql = "SELECT Year
 , [Nests located]
 , Occupied
+, [Unknown occupancy]
 , Successful
-, NestsNotFound_P as [Not found]
-, NestsNotCounted_P as [Not counted]
+, [Unknown productivity]
 , [Young fledged]
-, [% nest success]
 , [Young/occupied nest]
 , [Young/successful nest]
+, [% nest success]
 FROM Summary_SuccessByYear
-ORDER BY [Year]")
-SuccessByYearDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+ORDER BY [Year]"
+
+# Get the data from the database into a data frame
+SuccessByYearDF = GetDataFrameFromDatabase(Sql) 
 
 # Filter on the current year and remove the Year column
 CurrentSummaryDF = SuccessByYearDF[SuccessByYearDF$Year == SurveyYear,-1]
@@ -296,15 +298,27 @@ colnames(SurveyDatesDF_t) = 'Date'
 # Output the survey dates table
 kable(SurveyDatesDF_t)
 
+NestsLocated = CurrentSummaryDF$`Nests located`
+Occupied = CurrentSummaryDF$Occupied
+Successful = CurrentSummaryDF$Successful
+YoungFledged = CurrentSummaryDF$`Young fledged`
+NF = CurrentSummaryDF$`Not found`
+NC = CurrentSummaryDF$`Not counted`
+YngPerOccupiedNest = CurrentSummaryDF$`Young/occupied nest`
+YngPerNest = CurrentSummaryDF$`Young/successful nest`
+PctSuccessful = CurrentSummaryDF$`% nest success`
+
+# Increment the table counter
 TableCounter = TableCounter + 1
 ```
 
 ## Survey results summary
 
+Results for the `r SurveyYear` bald eagle survey in WRST appear in Table `r TableCounter`. Success and productivity metrics are reported in Table `r TableCounter + 1`. `r NestsLocated` nests were located during the survey. Of these nests, `r Occupied` were occupied and `r Successful` produced young.
+
 Table `r TableCounter`. Results, `r SurveyYear` bald eagles survey.
 
 ```{r echo=FALSE, label="Summary (counts)"}
-
 # Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
 # a table, transpose it so it fits the report better, modify the header, and output
 # Because R stupidly adds decimal places to integer values when you transpose a table
@@ -351,35 +365,35 @@ Table `r TableCounter`. Bald eagle productivity and success rates by river segme
 TableCounter = TableCounter + 1
 
 # Retrieve the annual summary information from the database
-Sql = paste("SELECT 
-      [Year],
-      [RiverSegment] as [River segment]
-      ,[NestsLocated] as [Nests located]
-      ,[Occupied]
-      ,[Unknown occupancy]
-      ,[Successful]
-      ,[Young fledged]
-      ,[% nest success]
-      ,[Young/occupied nest]
-      ,[Young/successful nest]
-  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
-  WHERE [Year] <= ",SurveyYear," ORDER BY RiverSegment,Year")
+Sql = paste("SELECT Year      
+,RiverSegment
+, [Nests located]
+, Occupied
+, [Unknown occupancy]
+, Successful
+, [Unknown productivity]
+, [Young fledged]
+,[Young/occupied nest]
+, [Young/successful nest]
+, [% nest success]
+FROM            Summary_SuccessByYearAndRiverSegment
+ORDER BY Year DESC")
 
 # Get the data from the database into a data frame
 SuccessByYearRiverSegmentDF = GetDataFrameFromDatabase(Sql) 
 
 # Filter the above data frame on the current year and omit the first (Year) column
-CurrentSummaryDataFrame = SuccessByYearRiverSegmentDF[SuccessByYearRiverSegmentDF$Year == SurveyYear,2:10]
+CurrentSummaryDataFrame = SuccessByYearRiverSegmentDF[SuccessByYearRiverSegmentDF$Year == SurveyYear,2:11]
 
 # Change all the values to strings so R does not pad zeroes to the integer values
 CurrentSummaryDataFrame = sapply(CurrentSummaryDataFrame, as.character) 
 
 # Transpose the data
-SuccessByYearRiverSegmentDF_t = t(CurrentSummaryDataFrame)
-colnames(SuccessByYearRiverSegmentDF_t)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
+CurrentSummaryDataFrame_t = t(CurrentSummaryDataFrame)
+colnames(CurrentSummaryDataFrame_t)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
 
 # Output the data
-kable(SuccessByYearRiverSegmentDF_t)
+kable(CurrentSummaryDataFrame_t)
 
 ```
 
@@ -499,7 +513,7 @@ MaxSuccessByYear = max(SuccessByYearDF$`% nest success`)
 MinYear = min(SuccessByYearDF$Year) 
 MaxYear = max(SuccessByYearDF$Year)
 
-TribsSuccessDF = subset(SuccessByYearRiverSegmentDF,SuccessByYearRiverSegmentDF$`River segment` != 'Chitina River Proper' & SuccessByYearRiverSegmentDF$`River segment` != 'Chitina River Tributaries')
+TribsSuccessDF = subset(SuccessByYearRiverSegmentDF,SuccessByYearRiverSegmentDF$`RiverSegment` != 'Chitina River Proper' & SuccessByYearRiverSegmentDF$`RiverSegment` != 'Chitina River Tributaries')
 
 
 ```
@@ -551,7 +565,7 @@ ggplot(data=TribsSuccessDF) +
   geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
    # Minimal theme
   theme_minimal() +
-  facet_wrap(vars(`River segment`))
+  facet_wrap(vars(`RiverSegment`))
 
 
 ```
@@ -632,7 +646,7 @@ ggplot(data=TribsSuccessDF) +
   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
    # Minimal theme
   theme_minimal() +
-  facet_wrap(vars(`River segment`))
+  facet_wrap(vars(`RiverSegment`))
 
 ```
 
@@ -645,7 +659,7 @@ Figure `r FigureCounter`. Young per successful nest by year, entire study area.
 ggplot(data=TribsSuccessDF) +
   geom_line(mapping = aes(x=Year,y=`% nest success`)) +
   geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
-  facet_wrap(vars(`River segment`)) +
+  facet_wrap(vars(`RiverSegment`)) +
    # Minimal theme
   theme_minimal() 
 ```
