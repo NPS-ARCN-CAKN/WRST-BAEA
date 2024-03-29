@@ -38,6 +38,7 @@ library(ggplot2)
 library(sp)
 library(sf)
 
+
 ```
 
 ```{r echo=FALSE}
@@ -322,8 +323,7 @@ MaxYear = max(SuccessByYearDF$Year, na.rm = TRUE)
 # Increment the table counter
 TableCounter = TableCounter + 1
 
-ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights. Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests ',Successful,' successfully produced young (',PctSuccessful,'% success rate). Successful nests produced a mean of, ',YngPerNest,' young per nest.',sep='')
-
+ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights. Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests ',Successful,' successfully produced young (',PctSuccessful,'% success rate). Successful nests produced a mean of ',YngPerNest,' young per nest.',sep='')
 
 ```
 
@@ -348,11 +348,7 @@ kable(CurrentSummaryDF_char_DF)
 TableCounter = TableCounter + 1
 ```
 
-## results map
-
-
 ```{r echo=FALSE}
-
 
 # Database query
 Sql = paste("SELECT   
@@ -424,8 +420,6 @@ National Park and Preserve"), size = 3, color = "black") +
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
-
-
 ```
 
 Figure `r FigureCounter`. Dispersion of successful bald eagle nests in the Copper River Valley in in `r SurveyYear`. Green areas show areas where nests were most successful at producing young.
@@ -436,7 +430,7 @@ FigureCounter = FigureCounter + 1
 
 ```
 
-## By river segment
+## Productivity by river segment
 
 Table `r TableCounter` shows nest success metrics by river segment for the `r SurveyYear` bald eagle survey in WRST. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter`.
 
@@ -482,46 +476,107 @@ kable(CurrentSuccessByYearRiverSegmentDF_str_t)
 
 ```
 
+## Long-term trends
 
-## Long term trends
-
-Bald eagle monitoring has been done from 1989 through `r MaxYear` (Table 3). Long-term mean occupancy has been `r MeanOccupancyByYear`% and mean nest success has ranged between `r MinSuccessByYear`% and `r MaxSuccessByYear`%, averaging `r MeanSuccessByYear`%.
-
-Table `r TableCounter`. Long-term bald eagle productivity metrics in WRST by river segment.
+Table `r TableCounter`. Long-term bald eagle productivity metrics, Copper River Valley.
 
 ```{r echo=FALSE}
+
+kable(SuccessByYearDF)
+
 # Increment the table counter
 TableCounter = TableCounter + 1
 
-# Long term productivity metrics
-kable(SuccessByYearRiverSegmentDF)
 ```
 
 ### % nest success 
 ```{r echo=FALSE}
 
 # Linear model
-SuccessByYearLM = lm(formula = `% nest success` ~ Year, data = SuccessByYearDF)
-
-# Store the r squared, p and other statistics to show later
-R2 = summary(SuccessByYearLM)$adj.r.squared
-R2 = format(round(R2, 2), nsmall = 2)
-p = summary(SuccessByYearLM)$coefficients["Year", "Pr(>|t|)"]
-p=format(round(p, 2), nsmall = 2)
-RegressionText = paste('R^2=',R2,' p=',p,sep='')
+lm = lm(formula = `% nest success` ~ Year, data = SuccessByYearDF)
+#summary(SuccessByYearLM)
+lmstats = paste("Adj R2 = ",signif(summary(lm)$adj.r.squared, 5),
+                     "Intercept =",signif(lm$coef[[1]],5 ),
+                     " Slope =",signif(lm$coef[[2]], 5),
+                     " P =",signif(summary(lm)$coef[2,4], 5))
 
 #Mean nest success
 MeanNestSuccess = mean(SuccessByYearDF$`% nest success`)
 
 # plot % nest success
 ggplot(data=SuccessByYearDF) +
+  
+  # Mean nest success line
+  geom_line(mapping = aes(x=Year,y=MeanNestSuccess,),linetype = 2) +
+
   geom_line(mapping = aes(x=Year,y=`% nest success`)) +
-  geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
-   # Minimal theme
+  geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  
+  xlab("Year") +
+  ylab("Percent nest success") +
+  
+  # Minimal theme
   theme_minimal() 
+
 ```
 
-Figure `r FigureCounter`. Nest success by year: Entire study area (Mean nest success = `r MeanNestSuccess`, R\^2=`r R2`, p=`r p`).
+Figure `r FigureCounter`. Nest success by year: Entire study area (`r lmstats`. Mean nest success [dashed line]=`r MeanNestSuccess`%).
+
+### Young / successful nest
+
+```{r echo=FALSE}
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
+
+lm <- lm(SuccessByYearDF$`Young/successful nest` ~ SuccessByYearDF$Year)
+lmstats = paste("Adj R2 = ",signif(summary(lm)$adj.r.squared, 5),
+                     "Intercept =",signif(lm$coef[[1]],5 ),
+                     " Slope =",signif(lm$coef[[2]], 5),
+                     " P =",signif(summary(lm)$coef[2,4], 5))
+
+# Store the r squared, p and other statistics to show later
+R2 = summary(lm)$adj.r.squared
+R2 = format(round(R2, 2), nsmall = 2)
+p = summary(lm)$coefficients["SuccessByYearDF$Year", "Pr(>|t|)"]
+p=format(round(p, 2), nsmall = 2)
+RegressionText = paste('R^2=',R2,' p=',p,sep='')
+
+ggplot(data=SuccessByYearDF) +
+  
+  # Mean young per successful nest line
+  geom_line(mapping = aes(x=Year,y=MeanYoungPerSuccessfulNest,),linetype = 2) +
+  
+  # Mean label
+  #geom_text(mapping = aes(x=2000,y=1.5),label="Mean") +
+
+  # Young per successful nest line
+  geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
+  
+  # Linear regression model with 95% SE shaded area
+  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  
+  xlab("Year") +
+  ylab("Young per successful nest") +
+  
+   # Minimal theme
+  theme_minimal() 
+
+```
+
+Figure `r FigureCounter`. Young per successful nest by year, entire study area (`r lmstats`. Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`).
+
+## Long term trends by river segment
+
+Bald eagle monitoring has been done from 1989 through `r MaxYear` (Appendix A). Long-term mean occupancy has been `r MeanOccupancyByYear`% and mean nest success has ranged between `r MinSuccessByYear`% and `r MaxSuccessByYear`%, averaging `r MeanSuccessByYear`%.
+
+Table `r TableCounter`. Long-term bald eagle productivity metrics in the Copper River Valley, by river segment.
+
+```{r echo=FALSE}
+# Increment the table counter
+TableCounter = TableCounter + 1
+
+```
+
 
 ### % nest success map faceted
 ```{r echo=FALSE}
@@ -538,29 +593,6 @@ ggplot(data=SuccessByYearRiverSegmentDF) +
 
 Figure `r FigureCounter`. Nest success by year and river segment.
 
-### Young / successful nest
-
-```{r echo=FALSE}
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
-
-lm <- lm(SuccessByYearDF$`Young/successful nest` ~ SuccessByYearDF$Year)
-# Store the r squared, p and other statistics to show later
-R2 = summary(lm)$adj.r.squared
-R2 = format(round(R2, 2), nsmall = 2)
-p = summary(lm)$coefficients["SuccessByYearDF$Year", "Pr(>|t|)"]
-p=format(round(p, 2), nsmall = 2)
-RegressionText = paste('R^2=',R2,' p=',p,sep='')
-
-ggplot(data=SuccessByYearDF) +
-  geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
-  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
-   # Minimal theme
-  theme_minimal() 
-
-```
-
-Figure `r FigureCounter`. Young per successful nest by year, entire study area.
 
 ### Young / successful nest faceted
 
@@ -592,6 +624,14 @@ Kozie, 1996.
 # Appendices
 
 ## Appendix A: Long-term productivity data
+
+```{r echo=FALSE, label = "Appendix A: Long-term productivity data"}
+# Increment the table counter
+TableCounter = TableCounter + 1
+
+# Long term productivity metrics
+kable(SuccessByYearRiverSegmentDF)
+```
 
 ## Appendix B: Columns descriptions
 
