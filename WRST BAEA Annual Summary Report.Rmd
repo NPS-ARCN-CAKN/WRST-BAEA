@@ -320,8 +320,7 @@ MaxSuccessByYear = max(SuccessByYearDF$`% nest success`, na.rm = TRUE)
 MinYear = min(SuccessByYearDF$Year, na.rm = TRUE) 
 MaxYear = max(SuccessByYearDF$Year, na.rm = TRUE)
 
-# Increment the table counter
-TableCounter = TableCounter + 1
+
 
 ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights. Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests ',Successful,' successfully produced young (',PctSuccessful,'% success rate). Successful nests produced a mean of ',YngPerNest,' young per nest.',sep='')
 
@@ -569,17 +568,14 @@ Figure `r FigureCounter`. Young per successful nest by year, entire study area (
 
 Bald eagle monitoring has been done from 1989 through `r MaxYear` (Appendix A). Long-term mean occupancy has been `r MeanOccupancyByYear`% and mean nest success has ranged between `r MinSuccessByYear`% and `r MaxSuccessByYear`%, averaging `r MeanSuccessByYear`%.
 
-Table `r TableCounter`. Long-term bald eagle productivity metrics in the Copper River Valley, by river segment.
 
-```{r echo=FALSE}
-# Increment the table counter
-TableCounter = TableCounter + 1
-
-```
 
 
 ### % nest success map faceted
 ```{r echo=FALSE}
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
+
 # plot % nest success faceted by river segment
 ggplot(data=SuccessByYearRiverSegmentDF) +
   geom_line(mapping = aes(x=Year,y=`% nest success`)) +
