@@ -123,17 +123,20 @@ Sql = paste("SELECT  [Year]
 DatesDF = GetDataFrameFromDatabase(Sql)
 
 # Retrieve the annual summary information from the database
-Sql = "SELECT Year
-, [Nests located]
-, Occupied
-, [Unknown occupancy]
-, Successful
-, [Unknown productivity]
-, [Young fledged]
-, [Young/occupied nest]
-, [Young/successful nest]
-, [% nest success]
-FROM Summary_SuccessByYear
+Sql = "SELECT TOP (1000) [Year]
+      ,[Nests located]
+      ,[Occupied]
+      ,[Successful]
+      ,[Productivity unknown]
+      ,[Eggs]
+      ,[Young fledged]
+      ,[% nest occupied]
+      ,[% nest success]
+      ,[Young/occupied nest]
+      ,[Young/successful nest]
+      ,[Occupied nests not found during productivity survey)]
+      ,[Occupied nests not counted during productivity survey)]
+  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYear]
 ORDER BY [Year]"
 
 # Get the data from the database into a data frame
@@ -235,7 +238,7 @@ National Park and Preserve"), size = 3, color = "black") +
 
 ```
 
-Figure `r FigureCounter`. Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers. `r FigureCounter = FigureCounter + 1`
+Figure `r FigureCounter`. Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers. 
 
 ## Surveys
 
@@ -263,6 +266,8 @@ During the second survey, all nest locations collected during prior surveys were
 # Results
 
 ```{r echo=FALSE}
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
 
 # Get the survey dates
 Sql = paste("SELECT 
@@ -281,13 +286,6 @@ OStart = SurveyDatesDF$`Occupancy survey start`
 OEnd = SurveyDatesDF$`Occupancy survey end`
 PStart = SurveyDatesDF$`Productivity survey start`
 PEnd = SurveyDatesDF$`Productivity survey end`
-```
-
-Bald eagle occupancy survey flights were conducted in WRST from `r GetLongDate(OStart)` to `r GetLongDate(OEnd)`. Follow-up productivity flights happened from `r GetLongDate(PStart)` to `r GetLongDate(PEnd)` (Table `r TableCounter`).
-
-Table `r TableCounter`. Bald eagle survey flights, `r SurveyYear`.
-
-```{r echo=FALSE}
 
 # Output the survey dates
 SurveyDatesDF_t = t(SurveyDatesDF)
@@ -296,107 +294,65 @@ SurveyDatesDF_t = t(SurveyDatesDF)
 colnames(SurveyDatesDF_t) = 'Date'
 
 # Output the survey dates table
-kable(SurveyDatesDF_t)
+#kable(SurveyDatesDF_t)
 
 NestsLocated = CurrentSummaryDF$`Nests located`
 Occupied = CurrentSummaryDF$Occupied
 Successful = CurrentSummaryDF$Successful
 YoungFledged = CurrentSummaryDF$`Young fledged`
-NF = CurrentSummaryDF$`Not found`
-NC = CurrentSummaryDF$`Not counted`
+NF = CurrentSummaryDF$`Occupied nests not found during productivity survey)`
+NC = CurrentSummaryDF$`Occupied nests not counted during productivity survey)`
 YngPerOccupiedNest = CurrentSummaryDF$`Young/occupied nest`
 YngPerNest = CurrentSummaryDF$`Young/successful nest`
-PctOccupied = round((CurrentSummaryDF$Occupied - CurrentSummaryDF$`Unknown occupancy`) / CurrentSummaryDF$`Nests located` * 100,1)
-PctSuccessful = round(CurrentSummaryDF$Successful / (CurrentSummaryDF$Occupied - CurrentSummaryDF$`Unknown productivity`) * 100,1)
+PctOccupied = CurrentSummaryDF$`% nest occupied`
+PctSuccessful = CurrentSummaryDF$`% nest success`
+
+# Retrieve the annual summary information from the database
+MeanSuccessRate = mean(SuccessByYearDF$`% nest success`, na.rm = TRUE)
+MeanYoung = mean(SuccessByYearDF$`Young fledged`, na.rm = TRUE)
+MeanYoungPerOccupiedNest = mean(SuccessByYearDF$`Young/occupied nest`, na.rm = TRUE)
+MeanYoungPerSuccessfulNest = mean(SuccessByYearDF$`Young/successful nest`, na.rm = TRUE)
+MeanOccupancyByYear = round(mean(SuccessByYearDF$`% nest occupied`, na.rm = TRUE),1)
+MeanSuccessByYear = round(mean(SuccessByYearDF$`% nest success`, na.rm = TRUE),1)
+MinSuccessByYear = min(SuccessByYearDF$`% nest success`, na.rm = TRUE)
+MaxSuccessByYear = max(SuccessByYearDF$`% nest success`, na.rm = TRUE)
+MinYear = min(SuccessByYearDF$Year, na.rm = TRUE) 
+MaxYear = max(SuccessByYearDF$Year, na.rm = TRUE)
 
 # Increment the table counter
 TableCounter = TableCounter + 1
+
+ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights. Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests ',Successful,' successfully produced young (',PctSuccessful,'% success rate). Successful nests produced a mean of, ',YngPerNest,' young per nest.',sep='')
+
+
 ```
 
-## Survey results summary
+Bald eagle occupancy survey flights were conducted in WRST from `r GetLongDate(OStart)` to `r GetLongDate(OEnd)`. Follow-up productivity flights happened from `r GetLongDate(PStart)` to `r GetLongDate(PEnd)` (Table `r TableCounter`). `r ResultsText`
 
-Results for the `r SurveyYear` bald eagle survey in WRST appear in Table `r TableCounter`. Success and productivity metrics are reported in Table `r TableCounter + 1`. `r NestsLocated` nests were located during the survey. Of these nests, `r Occupied` were occupied (`r PctOccupied`%) as of the productivity survey. Of occupied nests `r Successful` produced young (`r PctSuccessful`% success rate, `r YngPerNest` mean young per nest).
-
-Table `r TableCounter`. Results, `r SurveyYear` bald eagles survey.
+Table `r TableCounter`. Results summary, `r SurveyYear` bald eagles survey.
 
 ```{r echo=FALSE, label="Summary (counts)"}
 # Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
 # a table, transpose it so it fits the report better, modify the header, and output
-# Because R stupidly adds decimal places to integer values when you transpose a table
-# I've found the only way to correctly output the summary items is to separated out the
-# integer columns into one transposed table, and decimal values to another.
-# This is the integer table. Decimal metrics reported further down
-SummaryCountsDF = CurrentSummaryDF[1:6] 
-SummaryCountsDF_t = t(SummaryCountsDF) # Transpose the table so it fits better in the report
-colnames(SummaryCountsDF_t)[1] = "Counts" # Change the wierd default first column name to something informative
-kable(SummaryCountsDF_t)
 
-```
-```{r echo=FALSE, label="Summary (calculated metrics)"}
+# Convert it all to strings so R doesn't add decimal places to integers
+CurrentSummaryDF_char = sapply(CurrentSummaryDF, as.character) 
 
-# Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
-# a table, transpose it so it fits the report better, modify the header, and output
-# Because R stupidly adds decimal places to integer values when you transpose a table
-# I've found the only way to correctly output the summary items is to separated out the
-# integer columns into one transposed table, and decimal values to another.
-# This is the decimal table. Integer counts reported above.
-SummaryCalcsDF = CurrentSummaryDF[7:9] # Get just the integer summary items
-SummaryCalcsDF_t = t(SummaryCalcsDF) # Transpose the table so it fits better in the report
-colnames(SummaryCalcsDF_t)[1] = "Metrics" # Change the wierd default first column name to something informative
-kable(SummaryCalcsDF_t)
+# Convert it into a data frame
+CurrentSummaryDF_char_DF = as.data.frame(CurrentSummaryDF_char)
+colnames(CurrentSummaryDF_char_DF) = 'Result'
+#Output
+kable(CurrentSummaryDF_char_DF)
 
 # Increment the table counter
 TableCounter = TableCounter + 1
-
 ```
 
-## Survey results summary by river segment
-
-Table `r TableCounter` shows nest success metrics by river segment for the `r SurveyYear` bald eagle survey in WRST. Nest succes, as defined as an eagle pair producing offspring observable during the late summer productivity survey, is shown in Figure `r FigureCounter`.
-
-Table `r TableCounter`. Bald eagle productivity and success rates by river segment, `r SurveyYear`.
-
-```{r echo=FALSE}
-# Increment the table counter
-TableCounter = TableCounter + 1
-
-# Retrieve the annual summary information from the database
-Sql = paste("SELECT Year      
-,RiverSegment
-, [Nests located]
-, Occupied
-, [Unknown occupancy]
-, Successful
-, [Unknown productivity]
-, [Young fledged]
-,[Young/occupied nest]
-, [Young/successful nest]
-, [% nest success]
-FROM            Summary_SuccessByYearAndRiverSegment
-ORDER BY Year DESC")
-
-# Get the data from the database into a data frame
-SuccessByYearRiverSegmentDF = GetDataFrameFromDatabase(Sql) 
-
-# Filter the above data frame on the current year and omit the first (Year) column
-CurrentSummaryDataFrame = SuccessByYearRiverSegmentDF[SuccessByYearRiverSegmentDF$Year == SurveyYear,2:11]
-
-# Change all the values to strings so R does not pad zeroes to the integer values
-CurrentSummaryDataFrame = sapply(CurrentSummaryDataFrame, as.character) 
-
-# Transpose the data
-CurrentSummaryDataFrame_t = t(CurrentSummaryDataFrame)
-colnames(CurrentSummaryDataFrame_t)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
-
-# Output the data
-kable(CurrentSummaryDataFrame_t)
-
-```
+## results map
 
 
 ```{r echo=FALSE}
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
+
 
 # Database query
 Sql = paste("SELECT   
@@ -432,21 +388,6 @@ ggplot() +
   
   # Park boundary
   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
-  
-  # Density kernel layer
-  # NOTE: Sometimes this layer doesn't convey high success very well
-  # 2023 had high success in upper copper, but the kernel density didn't really
-  # convey that.
-  # stat_density_2d(
-  # data=SuccessFulNestsDataFrame
-  # ,contour_var = "count"
-  # ,geom = "polygon"
-  # ,bins =  50
-  # ,alpha = 0.1 # Transparancy is high so the features underneath show
-  # ,aes(x = Longitude, y = Latitude, fill = ..level..)
-  # ,show.legend = FALSE) + # Don't show the density values in the legend
-  # guides(fill = guide_legend(title = "Density")) +
-  # scale_fill_distiller(palette = "Greens", direction = 1) + # Kernel density color, etc.
 
     # Rivers
   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +  
@@ -495,32 +436,68 @@ FigureCounter = FigureCounter + 1
 
 ```
 
-## Historical results
+## By river segment
+
+Table `r TableCounter` shows nest success metrics by river segment for the `r SurveyYear` bald eagle survey in WRST. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter`.
+
+Table `r TableCounter`. Bald eagle productivity and success rates by river segment, `r SurveyYear`.
 
 ```{r echo=FALSE}
+# Increment the table counter
+TableCounter = TableCounter + 1
 
 # Retrieve the annual summary information from the database
-MeanSuccessRate = mean(SuccessByYearDF$`% nest success`)
-MeanYoung = mean(SuccessByYearDF$`Young fledged`)
-MeanYoungPerOccupiedNest = mean(SuccessByYearDF$`Young/occupied nest`)
-MeanYoungPerSuccessfulNest = mean(SuccessByYearDF$`Young/successful nest`)
-MeanSuccessByYear = mean(SuccessByYearDF$`% nest success`)
-MinSuccessByYear = min(SuccessByYearDF$`% nest success`)
-MaxSuccessByYear = max(SuccessByYearDF$`% nest success`)
-MinYear = min(SuccessByYearDF$Year) 
-MaxYear = max(SuccessByYearDF$Year)
+Sql = paste("SELECT  [Year]
+      ,[RiverSegment]
+      ,[Nests located]
+      ,[Occupied]
+      ,[Successful]
+      ,[Productivity unknown]
+      --,[Eggs]
+      ,[Young fledged]
+      ,[% nest occupied]
+      ,[% nest success]
+      ,[Young/occupied nest]
+      ,[Young/successful nest]
+      ,[Occupied nests not found during productivity survey)]
+      ,[Occupied nests not counted during productivity survey)]
+  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
+ORDER BY Year DESC")
 
-TribsSuccessDF = subset(SuccessByYearRiverSegmentDF,SuccessByYearRiverSegmentDF$`RiverSegment` != 'Chitina River Proper' & SuccessByYearRiverSegmentDF$`RiverSegment` != 'Chitina River Tributaries')
+# Get the data from the database into a data frame
+SuccessByYearRiverSegmentDF = GetDataFrameFromDatabase(Sql) 
 
+# Filter the above data frame on the current year and omit the first (Year) column
+CurrentSuccessByYearRiverSegmentDF = SuccessByYearRiverSegmentDF[SuccessByYearRiverSegmentDF$Year == SurveyYear,2:11]
+
+# Change all the values to strings so R does not pad zeroes to the integer values
+CurrentSuccessByYearRiverSegmentDF_str = sapply(CurrentSuccessByYearRiverSegmentDF, as.character) 
+
+# Transpose the data
+CurrentSuccessByYearRiverSegmentDF_str_t = t(CurrentSuccessByYearRiverSegmentDF_str)
+colnames(CurrentSuccessByYearRiverSegmentDF_str_t)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
+
+# Output the data
+kable(CurrentSuccessByYearRiverSegmentDF_str_t)
 
 ```
 
-Bald eagle monitoring has been done from 1989 through `r MaxYear` (Table 3). Mean nest success is `r MeanSuccessByYear`% ranging between `r MinSuccessByYear`% and `r MaxSuccessByYear`%.
 
+## Long term trends
 
+Bald eagle monitoring has been done from 1989 through `r MaxYear` (Table 3). Long-term mean occupancy has been `r MeanOccupancyByYear`% and mean nest success has ranged between `r MinSuccessByYear`% and `r MaxSuccessByYear`%, averaging `r MeanSuccessByYear`%.
 
-Data from 1989-1996 is from Kozie, 1996.
+Table `r TableCounter`. Long-term bald eagle productivity metrics in WRST by river segment.
 
+```{r echo=FALSE}
+# Increment the table counter
+TableCounter = TableCounter + 1
+
+# Long term productivity metrics
+kable(SuccessByYearRiverSegmentDF)
+```
+
+### % nest success 
 ```{r echo=FALSE}
 
 # Linear model
@@ -536,28 +513,20 @@ RegressionText = paste('R^2=',R2,' p=',p,sep='')
 #Mean nest success
 MeanNestSuccess = mean(SuccessByYearDF$`% nest success`)
 
-# Plot nest success by year
-# plot(SuccessByYearDF$Year,SuccessByYearDF$`% nest success`, type = "l",
-#      main = "Nest success by year",
-#      xlab = "Year",
-#      ylab = "% success"
-#      ,ylim=c(0,100)
-#      )
-# 
-# # Plot fitted regression line
-# abline(SuccessByYearLM)
-# text(x = median(SuccessByYearDF$Year, na.rm = TRUE), y = max(SuccessByYearDF$`% nest success`), label = RegressionText)
-
-# Output a summary of the linear model
-# summary(SuccessByYearLM)
-
+# plot % nest success
 ggplot(data=SuccessByYearDF) +
   geom_line(mapping = aes(x=Year,y=`% nest success`)) +
   geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
    # Minimal theme
   theme_minimal() 
+```
 
-ggplot(data=TribsSuccessDF) +
+Figure `r FigureCounter`. Nest success by year: Entire study area (Mean nest success = `r MeanNestSuccess`, R\^2=`r R2`, p=`r p`).
+
+### % nest success map faceted
+```{r echo=FALSE}
+# plot % nest success faceted by river segment
+ggplot(data=SuccessByYearRiverSegmentDF) +
   geom_line(mapping = aes(x=Year,y=`% nest success`)) +
   geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
    # Minimal theme
@@ -567,45 +536,9 @@ ggplot(data=TribsSuccessDF) +
 
 ```
 
-Figure `r FigureCounter`. Nest success by year: Entire study area (Mean nest success = `r MeanNestSuccess`, R\^2=`r R2`, p=`r p`).
+Figure `r FigureCounter`. Nest success by year and river segment.
 
-
-```{r echo=FALSE}
-
-
-
-# Linear model
-# YoungPerOccNestLM <- lm(SuccessByYearDF$`Young/occupied nest` ~ SuccessByYearDF$Year)
-# 
-# # Store the r squared, p and other statistics to show later
-# R2 = summary(YoungPerOccNestLM)$adj.r.squared
-# R2 = format(round(R2, 2), nsmall = 2)
-# p = summary(YoungPerOccNestLM)$coefficients["SuccessByYearDF$Year", "Pr(>|t|)"]
-# p=format(round(p, 2), nsmall = 2)
-# RegressionText = paste('R^2=',R2,' p=',p,sep='')
-# 
-# # Plot young per occupied nest by year
-# # plot(SuccessByYearDF$Year,SuccessByYearDF$`Young/occupied nest`, type = "l",
-# #      main = "Young per occupied nest by year",
-# #      xlab = "Year",
-# #      ylab = "Young per occupied nest")
-# # #add fitted regression line
-# # abline(YoungPerOccNestLM)
-# # text(x = median(SuccessByYearDF$Year, na.rm = TRUE), y = max(SuccessByYearDF$`Young/occupied nest`), label = RegressionText)
-# 
-# # Print the regression summary
-# #summary(YoungPerOccNestLM)
-# 
-# ggplot(data=SuccessByYearDF) +
-#   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
-#   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
-#    # Minimal theme
-#   theme_minimal() 
-
-```
-
-
-### Young per successful nest
+### Young / successful nest
 
 ```{r echo=FALSE}
 # Increment the figure counter
@@ -619,26 +552,23 @@ p = summary(lm)$coefficients["SuccessByYearDF$Year", "Pr(>|t|)"]
 p=format(round(p, 2), nsmall = 2)
 RegressionText = paste('R^2=',R2,' p=',p,sep='')
 
-# Plot young per successful nest by year
-# plot(SuccessByYearDF$Year,SuccessByYearDF$`Young/successful nest`, type = "l",
-#      main = "Young per successful nest by year",
-#      xlab = "Year",
-#      ylab = "Young per successful nest"
-#      ,ylim = c(0.5,3)
-#      )
-# 
-# #add fitted regression line
-# abline(lm)
-# text(x = median(SuccessByYearDF$Year, na.rm = TRUE), y = max(SuccessByYearDF$`Young/successful nest`)* 1.1, label = RegressionText)
-#summary(lm)
-
 ggplot(data=SuccessByYearDF) +
   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
    # Minimal theme
   theme_minimal() 
 
-ggplot(data=TribsSuccessDF) +
+```
+
+Figure `r FigureCounter`. Young per successful nest by year, entire study area.
+
+### Young / successful nest faceted
+
+```{r echo=FALSE}
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
+
+ggplot(data=SuccessByYearRiverSegmentDF) +
   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
    # Minimal theme
@@ -647,21 +577,7 @@ ggplot(data=TribsSuccessDF) +
 
 ```
 
-Figure `r FigureCounter`. Young per successful nest by year, entire study area.
-
-### Long term productivity by river segment
-
-```{r echo=FALSE}
-
-ggplot(data=TribsSuccessDF) +
-  geom_line(mapping = aes(x=Year,y=`% nest success`)) +
-  geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
-  facet_wrap(vars(`RiverSegment`)) +
-   # Minimal theme
-  theme_minimal() 
-```
-
-Figure `r FigureCounter`. Long term nest success by year and river segment.
+Figure `r FigureCounter`. Young per successful nest by year and river segment.
 
 
 
@@ -676,32 +592,6 @@ Kozie, 1996.
 # Appendices
 
 ## Appendix A: Long-term productivity data
-
-Table `r TableCounter`. Long term productivity over the Copper River watershed.
-
-```{r echo=FALSE}
-#Increment the table counter
-TableCounter = TableCounter + 1
-
-# Retrieve the annual summary information from the database
-SuccessByYearDF_Char <- sapply(SuccessByYearDF, as.character)
-SuccessByYearDF_Char[is.na(SuccessByYearDF)] <- " "
-kable(SuccessByYearDF_Char)
-
-```
-
-Table `r TableCounter`. Long term productivity by river segment.
-
-```{r echo=FALSE}
-# Increment the counters
-TableCounter = TableCounter + 1
-FigureCounter = FigureCounter + 1
-
-# Show the historical results by year and river segment
-SuccessByYearRiverSegmentDF[ , c(1,2)]  <- SuccessByYearRiverSegmentDF[ , c(2,1)] # Swap the year, river segment columns
-colnames(SuccessByYearRiverSegmentDF)[c(1,2)] <- colnames(SuccessByYearRiverSegmentDF)[c(2,1)]
-kable(SuccessByYearRiverSegmentDF)
-```
 
 ## Appendix B: Columns descriptions
 
