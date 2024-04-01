@@ -136,8 +136,8 @@ Sql = paste("SELECT [Year]
 ,[% nest success]
 ,[Young/occupied nest]
 ,[Young/successful nest]
-,[Occupied nests not found during productivity survey)]
-,[Occupied nests not counted during productivity survey)]
+--,[Occupied nests not found during productivity survey)]
+--,[Occupied nests not counted during productivity survey)]
 FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYear]
 WHERE Year <= ",SurveyYear,"
 ORDER BY [Year]",sep="")
@@ -190,7 +190,7 @@ A total of 609 km of riverways are surveyed annually, amounting to over 1200km o
 ```{r echo=FALSE}
 
 # Load shapefiles to be used in the maps later.
-Parks = read_sf(paste(ShpPath,"AKParks_reprojected.shp",sep=""))
+Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
 Rivers = read_sf(paste(ShpPath,"Alaska_Rivers_1M.shp",sep=""))
 AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
 
@@ -400,8 +400,9 @@ ggplot() +
   
   # Productive nests
   # Consider carefully whether to publish nest locations, or not
-  geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status)) +
-  scale_color_manual(values = c("Succeeded" = "blue", "Failed" = "gray")) +
+  geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status,na.rm = TRUE,shape=Status),size=3) +
+  scale_color_manual(values = c("Succeeded" = "black", "Failed" = "black")) +
+  scale_shape_manual(values = c(4,19)) + # 4 = X, 19 = dot
   
   # Set the map limits
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
