@@ -44,7 +44,7 @@ library(sf)
 ```{r echo=FALSE}
 
 # Set up report parameters here
-SurveyYear = 2008  # Set this to the desired report year
+SurveyYear = 2010  # Set this to the desired report year
 
 # ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
 # Contact data manager for server and database details.
@@ -501,7 +501,8 @@ TableCounter = TableCounter + 1
 
 ```
 
-### % nest success 
+### Success rates and productivity
+
 ```{r echo=FALSE}
 
 # Linear model
@@ -521,14 +522,19 @@ ggplot(data=SuccessByYearDF) +
   # Mean nest success line
   geom_line(mapping = aes(x=Year,y=MeanNestSuccess,),linetype = 2) +
 
+  # Nest success line
   geom_line(mapping = aes(x=Year,y=`% nest success`)) +
   geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  ylim(0,100) +
   
+  # Labels, etc.
   xlab("Year") +
   ylab("Percent nest success") +
   
   # Minimal theme
-  theme_minimal() 
+  theme_minimal()
+  
+  
 
 ```
 
@@ -563,6 +569,7 @@ ggplot(data=SuccessByYearDF) +
 
   # Young per successful nest line
   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
+  ylim(1,2) +
   
   # Linear regression model with 95% SE shaded area
   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
@@ -590,8 +597,11 @@ Bald eagle monitoring has been done from 1989 through `r MaxYear` (Appendix A). 
 FigureCounter = FigureCounter + 1
 
 # plot % nest success faceted by river segment
-ggplot(data=SuccessByYearRiverSegmentDF) +
+ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
   geom_line(mapping = aes(x=Year,y=`% nest success`)) +
+  ylim(0,100) +
+  
+  
   geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm") +
    # Minimal theme
   theme_minimal() +
@@ -600,7 +610,7 @@ ggplot(data=SuccessByYearRiverSegmentDF) +
 
 ```
 
-Figure `r FigureCounter`. Nest success by year and river segment.
+Figure `r FigureCounter`. Nest success by year and river segment (No data on productivity by river segment before 2004).
 
 
 ### Young / successful nest faceted
@@ -609,16 +619,18 @@ Figure `r FigureCounter`. Nest success by year and river segment.
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 
-ggplot(data=SuccessByYearRiverSegmentDF) +
+ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
+  ylim(1,2) +
+  
    # Minimal theme
   theme_minimal() +
   facet_wrap(vars(`RiverSegment`))
 
 ```
 
-Figure `r FigureCounter`. Young per successful nest by year and river segment.
+Figure `r FigureCounter`. Young per successful nest by year and river segment (No data on productivity by river segment before 2004).
 
 
 
