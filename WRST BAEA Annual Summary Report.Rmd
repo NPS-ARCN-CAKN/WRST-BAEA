@@ -44,7 +44,7 @@ library(sf)
 ```{r echo=FALSE}
 
 # Set up report parameters here
-SurveyYear = 2023  # Set this to the desired report year
+SurveyYear = 2009  # Set this to the desired report year
 
 # ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
 # Contact data manager for server and database details.
