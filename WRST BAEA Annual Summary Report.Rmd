@@ -44,7 +44,7 @@ library(sf)
 ```{r echo=FALSE}
 
 # Set up report parameters here
-SurveyYear = 2010  # Set this to the desired report year
+SurveyYear = 2023  # Set this to the desired report year
 
 # ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
 # Contact data manager for server and database details.
@@ -136,9 +136,9 @@ Sql = paste("SELECT [Year]
 ,[% nest success]
 ,[Young/occupied nest]
 ,[Young/successful nest]
---,[Occupied nests not found during productivity survey)]
---,[Occupied nests not counted during productivity survey)]
-FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYear]
+-- ,CASE WHEN Left(Source,3)='Fab' THEN 1 WHEN Left(Source,3)='Koz' THEN 2 WHEN Left(Source,3)='NPS' THEN 3 END as SourceCode
+--,Source
+FROM [Summary_SuccessByYear]
 WHERE Year <= ",SurveyYear,"
 ORDER BY [Year]",sep="")
 
@@ -400,7 +400,7 @@ ggplot() +
   
   # Productive nests
   # Consider carefully whether to publish nest locations, or not
-  geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status,na.rm = TRUE,shape=Status),size=3) +
+  geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status,na.rm = TRUE,shape=Status),size=2) +
   scale_color_manual(values = c("Succeeded" = "black", "Failed" = "black")) +
   scale_shape_manual(values = c(4,19)) + # 4 = X, 19 = dot
   
@@ -538,7 +538,7 @@ ggplot(data=SuccessByYearDF) +
 
 ```
 
-Figure `r FigureCounter`. Nest success by year: Entire study area (`r lmstats`. Mean nest success [dashed line]=`r MeanNestSuccess`%).
+Figure `r FigureCounter`. Nest success by year: Entire study area (`r lmstats`. Mean nest success [dashed line]=`r MeanNestSuccess`%). Data in Appendix.
 
 ### Young / successful nest
 
@@ -582,16 +582,12 @@ ggplot(data=SuccessByYearDF) +
 
 ```
 
-Figure `r FigureCounter`. Young per successful nest by year, entire study area (`r lmstats`. Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`).
+Figure `r FigureCounter`. Young per successful nest by year, entire study area (`r lmstats`. Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`). Data in Appendix.
 
 ## Long term trends by river segment
 
 Bald eagle monitoring has been done from 1989 through `r MaxYear` (Appendix A). Long-term mean occupancy has been `r MeanOccupancyByYear`% and mean nest success has ranged between `r MinSuccessByYear`% and `r MaxSuccessByYear`%, averaging `r MeanSuccessByYear`%.
 
-
-
-
-### % nest success map faceted
 ```{r echo=FALSE}
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
@@ -610,10 +606,7 @@ ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) 
 
 ```
 
-Figure `r FigureCounter`. Nest success by year and river segment (No data on productivity by river segment before 2004).
-
-
-### Young / successful nest faceted
+Figure `r FigureCounter`. Nest success by year and river segment (No data on productivity by river segment before 2004). Data in Appendix.
 
 ```{r echo=FALSE}
 # Increment the figure counter
@@ -630,21 +623,18 @@ ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) 
 
 ```
 
-Figure `r FigureCounter`. Young per successful nest by year and river segment (No data on productivity by river segment before 2004).
-
-
+Figure `r FigureCounter`. Young per successful nest by year and river segment (No data on productivity by river segment before 2004). Data in Appendix.
 
 # Discussion
 
-# Acknowledgements
-
 # Literature cited
 
-Kozie, 1996.
+Kozie, K. 1996. Bald Eagle Productivity for Wrangell-St Elias National Park and Preserve 1993-1996. Unpublished Report. National Park Service Wrangell St. Elias National Park. Copper Center, Alaska
 
-# Appendices
+Putera, J. and S.D. Miller. 2018. Protocol implementation plan for bald eagle monitoring in Wrangell-St. Elias National Park & Preserve, Central Alaska Network: Version 1.0. Natural Resource Report. NPS/CAKN/NRR—2018/1752. National Park Service. Fort Collins, Colorado
 
-## Appendix A: Long-term productivity data
+
+## Appendix: Long-term productivity data
 
 ```{r echo=FALSE, label = "Appendix A: Long-term productivity data"}
 # Increment the table counter
@@ -654,3 +644,4 @@ TableCounter = TableCounter + 1
 kable(SuccessByYearRiverSegmentDF)
 ```
 
+Results prior to 2004 from Kozie (1996). Results including and after 2004 from WRST and the NPS Central Alaska Inventory and Monitoring Program (Putera and Miller, 2018).
