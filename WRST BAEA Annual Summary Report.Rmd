@@ -44,7 +44,7 @@ library(sf)
 ```{r echo=FALSE}
 
 # Set up report parameters here
-SurveyYear = 2009  # Set this to the desired report year
+SurveyYear = 2008  # Set this to the desired report year
 
 # ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
 # Contact data manager for server and database details.
@@ -114,38 +114,40 @@ Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, Haliaeetus
 
 # Get the dates of the occupancy surveys
 Sql = paste("SELECT  [Year]
-      ,[MinOccupancySurveyDate]
-      ,[MaxOccupancySurveyDate]
-      ,[NumberOfOccupancySurveyDays]
-      ,[MinProductivitySurveyDate]
-      ,[MaxProductivitySurveyDate]
-      ,[NumberOfProductivitySurveyDays]
-  FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] where year = ",SurveyYear," Order By Year",sep = '')
+,[MinOccupancySurveyDate]
+,[MaxOccupancySurveyDate]
+,[NumberOfOccupancySurveyDays]
+,[MinProductivitySurveyDate]
+,[MaxProductivitySurveyDate]
+,[NumberOfProductivitySurveyDays]
+FROM [Summary_SurveyDatesByYear] 
+WHERE Year = ",SurveyYear," Order By Year",sep = '')
 DatesDF = GetDataFrameFromDatabase(Sql)
 
-# Retrieve the annual summary information from the database
-Sql = "SELECT TOP (1000) [Year]
-      ,[Nests located]
-      ,[Occupied]
-      ,[Successful]
-      ,[Productivity unknown]
-      ,[Eggs]
-      ,[Young fledged]
-      ,[% nest occupied]
-      ,[% nest success]
-      ,[Young/occupied nest]
-      ,[Young/successful nest]
-      ,[Occupied nests not found during productivity survey)]
-      ,[Occupied nests not counted during productivity survey)]
-  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYear]
-ORDER BY [Year]"
+# Retrieve the success and productivity data from the database
+Sql = paste("SELECT [Year]
+,[Nests located]
+,[Occupied]
+,[Successful]
+,[Productivity unknown]
+,[Eggs]
+,[Young fledged]
+,[% nest occupied]
+,[% nest success]
+,[Young/occupied nest]
+,[Young/successful nest]
+,[Occupied nests not found during productivity survey)]
+,[Occupied nests not counted during productivity survey)]
+FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYear]
+WHERE Year <= ",SurveyYear,"
+ORDER BY [Year]",sep="")
 
 # Get the data from the database into a data frame
 SuccessByYearDF = GetDataFrameFromDatabase(Sql) 
 
-# Filter on the current year and remove the Year column
+# We'll need just this year's data in a separated data frame from all the historical data.
+# Filter on the summary data frame on the current year and then remove the Year column
 CurrentSummaryDF = SuccessByYearDF[SuccessByYearDF$Year == SurveyYear,-1]
-
 
 ```
 
@@ -187,12 +189,12 @@ A total of 609 km of riverways are surveyed annually, amounting to over 1200km o
 
 ```{r echo=FALSE}
 
-# Load shapefiles
-Parks = read_sf("C:/Work/GIS Common Layers/GCS/AKParks_reprojected.shp")
-Rivers = read_sf("C:/Work/GIS Common Layers/Alaska_Rivers_1M.shp")
-AK  = read_sf("C:/Work/GIS Common Layers/GCS/AK_GCS_poly.shp")
+# Load shapefiles to be used in the maps later.
+Parks = read_sf(paste(ShpPath,"AKParks_reprojected.shp",sep=""))
+Rivers = read_sf(paste(ShpPath,"Alaska_Rivers_1M.shp",sep=""))
+AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
 
-
+# Build a map of the survey area showing park boundaries, copper river and tributaries, etc.
 ggplot() +
   
   # Blue rectangle to make the background of the map blue
@@ -207,7 +209,7 @@ ggplot() +
   # Rivers
   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +
   
-  # Set the map limits
+  # Set the map limits, zoom into the BAEA monitoring area
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
   xlab('Longitude') +
   ylab('Latitude')+
@@ -215,9 +217,8 @@ ggplot() +
   # Minimal theme
   theme_minimal() +
   
-  # WRST Label
-  geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
-National Park and Preserve"), size = 3, color = "black") +
+  # WRST text Label
+  geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias National Park and Preserve"), size = 3, color = "black") +
   
   # Upper Copper River label
   geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 3, color = "dodgerblue4") +
@@ -234,9 +235,6 @@ National Park and Preserve"), size = 3, color = "black") +
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
   
-
-
-
 ```
 
 Figure `r FigureCounter`. Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers. 
@@ -267,36 +265,40 @@ During the second survey, all nest locations collected during prior surveys were
 # Results
 
 ```{r echo=FALSE}
+
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 
 # Get the survey dates
 Sql = paste("SELECT 
-      --[Year],
-      [MinOccupancySurveyDate] as [Occupancy survey start]
-      ,[MaxOccupancySurveyDate] as [Occupancy survey end]
-      -- ,[NumberOfOccupancySurveyDays]
-      ,[MinProductivitySurveyDate] as [Productivity survey start]
-      ,[MaxProductivitySurveyDate] as [Productivity survey end]
-      -- ,[NumberOfProductivitySurveyDays]
-  FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
-  WHERE [Year] =",SurveyYear,sep="")
+--[Year],
+[MinOccupancySurveyDate] as [Occupancy survey start]
+,[MaxOccupancySurveyDate] as [Occupancy survey end]
+-- ,[NumberOfOccupancySurveyDays]
+,[MinProductivitySurveyDate] as [Productivity survey start]
+,[MaxProductivitySurveyDate] as [Productivity survey end]
+-- ,[NumberOfProductivitySurveyDays]
+FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
+WHERE [Year] = ",SurveyYear,sep="")
 
 SurveyDatesDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+
+# Build some survey date values to use later in the markdown text
 OStart = SurveyDatesDF$`Occupancy survey start`
 OEnd = SurveyDatesDF$`Occupancy survey end`
 PStart = SurveyDatesDF$`Productivity survey start`
 PEnd = SurveyDatesDF$`Productivity survey end`
 
-# Output the survey dates
-SurveyDatesDF_t = t(SurveyDatesDF)
+# Transpose the survey dates data frame
+#SurveyDatesDF_t = t(SurveyDatesDF)
 
 # Change the goofy column header
-colnames(SurveyDatesDF_t) = 'Date'
+#colnames(SurveyDatesDF_t) = 'Date'
 
 # Output the survey dates table
 #kable(SurveyDatesDF_t)
 
+# Build some summary statistics to report in the markdown
 NestsLocated = CurrentSummaryDF$`Nests located`
 Occupied = CurrentSummaryDF$Occupied
 Successful = CurrentSummaryDF$Successful
@@ -308,7 +310,7 @@ YngPerNest = CurrentSummaryDF$`Young/successful nest`
 PctOccupied = CurrentSummaryDF$`% nest occupied`
 PctSuccessful = CurrentSummaryDF$`% nest success`
 
-# Retrieve the annual summary information from the database
+# Build long term success and productivity metrics over the entire surveying history to use in the markdown
 MeanSuccessRate = mean(SuccessByYearDF$`% nest success`, na.rm = TRUE)
 MeanYoung = mean(SuccessByYearDF$`Young fledged`, na.rm = TRUE)
 MeanYoungPerOccupiedNest = mean(SuccessByYearDF$`Young/occupied nest`, na.rm = TRUE)
@@ -321,7 +323,8 @@ MinYear = min(SuccessByYearDF$Year, na.rm = TRUE)
 MaxYear = max(SuccessByYearDF$Year, na.rm = TRUE)
 
 
-
+# Build a paragraph of embeddable text to report the statistics in the markdown (the stats could be embedded in the markdown individually, but 
+# for some reason it doesn't always work consistently, so I built the paragraph here to be embedded further down.)
 ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights. Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests ',Successful,' successfully produced young (',PctSuccessful,'% success rate). Successful nests produced a mean of ',YngPerNest,' young per nest.',sep='')
 
 ```
@@ -340,6 +343,7 @@ CurrentSummaryDF_char = sapply(CurrentSummaryDF, as.character)
 # Convert it into a data frame
 CurrentSummaryDF_char_DF = as.data.frame(CurrentSummaryDF_char)
 colnames(CurrentSummaryDF_char_DF) = 'Result'
+
 #Output
 kable(CurrentSummaryDF_char_DF)
 
@@ -349,18 +353,25 @@ TableCounter = TableCounter + 1
 
 ```{r echo=FALSE}
 
-# Database query
+# Get the spatial locations of successful and failed nests for a map
 Sql = paste("SELECT   
 --Nest_ID
 --, RiverSegment
 [Lat-NAD83] AS Latitude
 , [Lon-NAD83] AS Longitude
 , NumYng
-,CASE WHEN StatusCode_P = 'IF' THEN 'Failed' WHEN StatusCode_P = 'S' THEN 'Succeeded' ELSE NULL END AS Status
+,CASE 
+  WHEN StatusCode_P = 'IF' THEN 'Failed' 
+  WHEN StatusCode_P = 'S' THEN 'Succeeded' 
+  ELSE NULL 
+END AS Status
 , StatusCode_P
 --, Nest_O
 FROM         Dataset_Productivity
-WHERE     (Year = ",SurveyYear,") AND ([Lat-NAD83] IS NOT NULL) AND ([Lat-NAD83] > 50) AND (StatusCode_P IN ('S', 'IF'))
+WHERE     (Year = ",SurveyYear,") 
+AND ([Lat-NAD83] IS NOT NULL) -- Avoid missing spatial coords
+AND ([Lat-NAD83] > 50) -- Avoid Lat/Lon records of 0/0
+AND (StatusCode_P IN ('S', 'IF')) -- Successful or faild, ignore not found and not counted records
 ",sep='')
 
 # Get data frame from query
@@ -390,7 +401,7 @@ ggplot() +
   # Productive nests
   # Consider carefully whether to publish nest locations, or not
   geom_point(data=ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status)) +
-  scale_color_manual(values = c("Succeeded" = "darkgreen", "Failed" = "red")) +
+  scale_color_manual(values = c("Succeeded" = "blue", "Failed" = "gray")) +
   
   # Set the map limits
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
@@ -441,21 +452,22 @@ TableCounter = TableCounter + 1
 
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT  [Year]
-      ,[RiverSegment]
-      ,[Nests located]
-      ,[Occupied]
-      ,[Successful]
-      ,[Productivity unknown]
-      --,[Eggs]
-      ,[Young fledged]
-      ,[% nest occupied]
-      ,[% nest success]
-      ,[Young/occupied nest]
-      ,[Young/successful nest]
-      ,[Occupied nests not found during productivity survey)]
-      ,[Occupied nests not counted during productivity survey)]
-  FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
-ORDER BY Year DESC")
+,[RiverSegment]
+,[Nests located]
+,[Occupied]
+,[Successful]
+,[Productivity unknown]
+--,[Eggs] -- Eggs were inconsistently collected over the years
+,[Young fledged]
+,[% nest occupied]
+,[% nest success]
+,[Young/occupied nest]
+,[Young/successful nest]
+,[Occupied nests not found during productivity survey)]
+,[Occupied nests not counted during productivity survey)]
+FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
+WHERE Year <= ",SurveyYear,"
+ORDER BY Year DESC",sep="")
 
 # Get the data from the database into a data frame
 SuccessByYearRiverSegmentDF = GetDataFrameFromDatabase(Sql) 
@@ -629,21 +641,3 @@ TableCounter = TableCounter + 1
 kable(SuccessByYearRiverSegmentDF)
 ```
 
-## Appendix B: Columns descriptions
-
-[to be added]
-
-```{r echo=FALSE}
-
-# # Get the dates of the occupancy surveys
-# Sql = paste("SELECT [Table],[Column]
-#       ,[ColumnDescription]
-#      
-#   FROM [CAKN_BaldEagles].[dbo].[DatabaseColumnsDescriptions]
-# where [Table] in ('Nests','SurveyData')
-# order by [Table], [Column]",sep='')
-# df = GetDataFrameFromDatabase(Sql)
-# 
-# # Output the table
-# kable(df)
-```
