@@ -1,7 +1,11 @@
 ---
 output:
-  html_document: default
+  html_document:
+    number_sections: no
+    toc: no
+  
 ---
+
 
 ```{=html}
 <style>
@@ -208,7 +212,7 @@ Five survey areas were defined along major riverways, and are described in Kozie
 
 A total of 609 km of riverways are surveyed annually, amounting to over 1200km of surveys.
 
-```{r echo=FALSE}
+```{r echo=FALSE,fig.alt=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.cap=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep="")}
 
 # Load shapefiles to be used in the maps later.
 Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
@@ -256,14 +260,11 @@ ggplot() +
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
-# Make a caption for the figure  
-FigureCaption = paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep="")
-
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
 
-`r FigureCaption`
+
 
 ## Surveys
 
@@ -312,7 +313,7 @@ ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the oc
 
 Bald eagle occupancy survey flights were conducted in WRST from `r GetLongDate(OStart)` to `r GetLongDate(OEnd)`. Follow-up productivity flights happened from `r GetLongDate(PStart)` to `r GetLongDate(PEnd)`. `r ResultsText`
 
-Table `r TableCounter`. Results summary, `r SurveyYear` bald eagles survey.
+
 
 ```{r echo=FALSE, label="Summary (counts)"}
 # Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
@@ -326,13 +327,13 @@ CurrentSummaryDF_char_DF = as.data.frame(CurrentSummaryDF_char)
 colnames(CurrentSummaryDF_char_DF) = 'Result'
 
 #Output
-kable(CurrentSummaryDF_char_DF)
+TableCaption = paste("Table ",TableCounter,". Results summary, ",SurveyYear," bald eagles survey.",sep="")
+kable(CurrentSummaryDF_char_DF, caption=TableCaption)
 
 # Increment the table counter
 TableCounter = TableCounter + 1
 ```
-
-```{r echo=FALSE}
+```{r echo=FALSE, label="Success map",fig.alt=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",CurrentSummaryDF$`% nest occupied`,"% and mean success rate was ",CurrentSummaryDF$`% nest success`,"%.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",CurrentSummaryDF$`% nest occupied`,"% and mean success rate was ",CurrentSummaryDF$`% nest success`,"%.",sep='')}
 
 # Get the spatial locations of successful and failed nests for a map
 Sql = paste("SELECT   
@@ -412,16 +413,11 @@ National Park and Preserve"), size = 3, color = "black") +
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
-# Make a figure caption
-FigureCaption = paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",CurrentSummaryDF$`% nest occupied`,"% and mean success rate was ",CurrentSummaryDF$`% nest success`,"%.",sep='')
-
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
 
-`r FigureCaption`
-
-```{r echo=FALSE}
+```{r echo=FALSE,label="Productivity map",fig.alt=paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",CurrentSummaryDF$`Young/occupied nest`," young per nest and mean productivity of successful nests was ",CurrentSummaryDF$`Young/successful nest`," young per nest.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",CurrentSummaryDF$`Young/occupied nest`," young per nest and mean productivity of successful nests was ",CurrentSummaryDF$`Young/successful nest`," young per nest.",sep='')}
 
 # Productivity map
 ggplot() +
@@ -471,14 +467,10 @@ National Park and Preserve"), size = 3, color = "black") +
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
-# Make a figure caption
-FigureCaption = paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",CurrentSummaryDF$`Young/occupied nest`," young per nest and mean productivity of successful nests was ",CurrentSummaryDF$`Young/successful nest`," young per nest.",sep='')
-
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
 
-`r FigureCaption`
 
 ## Productivity by river segment
 
@@ -560,7 +552,6 @@ MaxYoungPerSuccessfulNest = signif(max(SuccessByYearDF$`Young/successful nest`, 
 # Build a long term results summary paragraph to use in the markdown below
 ResultsText = paste("Over the ",LengthOfRecord," year history of the bald eagles monitoring effort in the Copper River study area, mean nest occupancy has ranged from ", MinOccupancy,"% to ", MaxOccupancy,"%, averaging ",MeanOccupancy,"%. Success rates, defined as occupied nests producing young, has ranged from ",MinSuccess,"% to ",MaxSuccess,"%, averaging ",MeanSuccess,"%. Productivity averaged ",MeanYoungPerSuccessfulNest," young per successful nest, ranging between ",MinYoungPerSuccessfulNest," to ", MaxYoungPerSuccessfulNest,".",sep='')
 
-
 ```
 
 `r ResultsText`
@@ -579,7 +570,7 @@ TableCounter = TableCounter + 1
 
 ### Success
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="Percent nest success by year",fig.alt=paste("Figure ",FigureCounter,". Nest success by year over the entire Copper River study area (",lmstats,"). Dashed line shows mean nest success rate of ",MeanSuccess,"% (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Nest success by year over the entire Copper River study area (",lmstats,"). Dashed line shows mean nest success rate of ",MeanSuccess,"% (full success and productivity metrics table is in Appendix).",sep='')}
 
 # Linear model
 lm = lm(formula = `% nest success` ~ Year, data = SuccessByYearDF)
@@ -615,19 +606,15 @@ ggplot(data=SuccessByYearDF) +
   # Minimal theme
   theme_minimal()
   
-  # Make a figure caption
-FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the entire Copper River study area (",lmstats,"). Dashed line shows mean nest success rate of ",MeanSuccess,"% (full success and productivity metrics table is in Appendix).",sep='')
-
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 
 ```
 
-`r FigureCaption`
-
 ### Young/successful nest
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="Young/successful nest",fig.alt=paste("Figure ",FigureCounter,". Young per successful nest by year over the entire Copper River study area (",lmstats,"). Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`).  (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Young per successful nest by year over the entire Copper River study area (",lmstats,"). Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`).  (full success and productivity metrics table is in Appendix).",sep='')}
+
 # Make a linear model of young per successful nest by year
 lm <- lm(SuccessByYearDF$`Young/successful nest` ~ SuccessByYearDF$Year)
 lmstats = paste("Adj R2 = ",signif(summary(lm)$adj.r.squared, 5),
@@ -663,21 +650,18 @@ ggplot(data=SuccessByYearDF) +
    # Minimal theme
   theme_minimal() 
 
-# Make a figure caption
-FigureCaption = paste("Figure ",FigureCounter,". Young per successful nest by year over the entire Copper River study area (",lmstats,"). Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`).  (full success and productivity metrics table is in Appendix).",sep='')
-
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 
 ```
 
-`r FigureCaption`
+
 
 ## Long term trends by river segment
 
 Bald eagle monitoring has been done from 1989 through `r MaxYear` (Appendix A). 
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="Percent nest success by year by river segment",fig.alt=paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep='')}
 
 # plot % nest success faceted by river segment
 ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
@@ -690,17 +674,14 @@ ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) 
   theme_minimal() +
   facet_wrap(vars(`RiverSegment`))
 
-# Make a figure caption
-FigureCaption = paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep='')
-
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 
 ```
  
- `r FigureCaption`
+ 
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="Productivity by year by river segment",fig.alt=paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep='')}
 
 # Plot productivity by year by river segment
 ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
@@ -712,13 +693,11 @@ ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) 
   theme_minimal() +
   facet_wrap(vars(`RiverSegment`))
 
-FigureCaption = paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep='')
-
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
 
-`r FigureCaption`
+
 
 # Discussion
 
