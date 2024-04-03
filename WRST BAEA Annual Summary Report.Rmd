@@ -10,10 +10,13 @@ output:
 ```{=html}
 <style>
     h1 {
-        font-family: "Times New Roman";
+        font-family: "Arial";
+        font-size: 16px;
     }
     
     h1.title {
+      font-family: "Times New Roman";
+      font-size: 20px;
       font-weight: bold;
     }
     
@@ -27,7 +30,17 @@ output:
     
     p {
         font-family: "Times New Roman";
-        font-size: 14px;
+        font-size: 11.5px;
+    }
+    
+    caption {
+        font-family: "Arial";
+        font-size: 9px;
+    }
+    
+    p caption {
+        font-family: "Arial";
+        font-size: 9px;
     }
 </style>
 ```
@@ -41,6 +54,9 @@ library(knitr)
 library(ggplot2)
 library(sp)
 library(sf)
+
+# Make kable show blanks for NAs
+options(knitr.kable.NA = '')
 
 ```
 
@@ -60,22 +76,18 @@ BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString
 # Set the path to shapefiles used in the map, AK, Parks, Rivers, etc
 ShpPath = "C:/Work/GIS Common Layers/"
 
-
 ```
 
 ---
 title: Annual Report on Vital Signs monitoring of distribution and abundance of Bald Eagles in Wrangell-St. Elias National Park and Preserve, `r SurveyYear` 
 output:
   html_document:
-
 ---
-
 
 ```{r echo=FALSE,label="Functions"}
 
 # Current date
 CurrentDate = Sys.Date() # Get the current date
-
 
 # Function to return data frames from SQL database queries
 GetDataFrameFromDatabase <- function(Sql) {
@@ -312,8 +324,6 @@ ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the oc
 
 Bald eagle occupancy survey flights were conducted in WRST from `r GetLongDate(OStart)` to `r GetLongDate(OEnd)`. Follow-up productivity flights happened from `r GetLongDate(PStart)` to `r GetLongDate(PEnd)`. `r ResultsText`
 
-
-
 ```{r echo=FALSE, label="Current survey metrics table"}
 # Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
 # a table, transpose it so it fits the report better, modify the header, and output
@@ -326,7 +336,7 @@ CurrentSummaryDF_char_DF = as.data.frame(CurrentSummaryDF_char)
 colnames(CurrentSummaryDF_char_DF) = 'Result'
 
 #Output
-kable(CurrentSummaryDF_char_DF, caption=paste("Table ",TableCounter,". Results summary, ",SurveyYear," bald eagles survey.",sep=""))
+kable(CurrentSummaryDF_char_DF,col.names=c("Metric","Result"), caption=paste("Table ",TableCounter,". Results summary, ",SurveyYear," bald eagles survey.",sep=""))
 
 # Increment the table counter
 TableCounter = TableCounter + 1
@@ -356,6 +366,7 @@ AND (StatusCode_P IN ('S', 'IF')) -- Successful or faild, ignore not found and n
 
 # Get data frame from query
 ProductivityDataFrame = GetDataFrameFromDatabase(Sql)
+ProductivityDataFrame[is.na(ProductivityDataFrame)] = " "
 
 # Map Title
 title = paste("Dispersion of successful nests, ", SurveyYear)
@@ -604,9 +615,11 @@ FigureCounter = FigureCounter + 1
 
 ```
 
-### Young/successful nest
+### Productivity
 
-```{r echo=FALSE,label="Young/successful nest",fig.alt=paste("Figure ",FigureCounter,". Young per successful nest by year over the entire Copper River study area (",lmstats,"). Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`).  (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Young per successful nest by year over the entire Copper River study area (",lmstats,"). Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`).  (full success and productivity metrics table is in Appendix).",sep='')}
+```{r echo=FALSE,label="Young/successful nest",fig.alt=paste("Figure ",FigureCounter,". Historical productivity (young per nest) over the entire Copper River study area. Mean young/successful nest = ",MeanYoungPerSuccessfulNest,". Mean young/occupied nest = ",MeanYoungPerOccupiedNest," (full success and productivity metrics table is in the Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Historical productivity (young per nest) over the entire Copper River study area. Mean young/successful nest = ",MeanYoungPerSuccessfulNest,". Mean young/occupied nest = ",MeanYoungPerOccupiedNest," (full success and productivity metrics table is in the Appendix).",sep='')}
+
+
 
 # Make a linear model of young per successful nest by year
 lm <- lm(SuccessByYearDF$`Young/successful nest` ~ SuccessByYearDF$Year)
@@ -624,21 +637,36 @@ RegressionText = paste('R^2=',R2,' p=',p,sep='')
 
 ggplot(data=SuccessByYearDF) +
   
-  # Mean young per successful nest line
-  geom_line(mapping = aes(x=Year,y=MeanYoungPerSuccessfulNest,),linetype = 2) +
+  # Young per successful nest linear regression model with 95% SE shaded area
+  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
   
-  # Mean label
-  #geom_text(mapping = aes(x=2000,y=1.5),label="Mean") +
+  # Young per successful nest mean horizontal line and label
+  #geom_line(mapping = aes(x=Year,y=MeanYoungPerSuccessfulNest),linetype = "solid") +
+  #geom_text(mapping = aes(x=2000,y=MeanYoungPerSuccessfulNest * 0.9),label=paste("Mean young/successful nest = ",MeanYoungPerSuccessfulNest,sep=""),linetype="solid") +
 
-  # Young per successful nest line
-  geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
-  ylim(1,2) +
+  # Young per successful nest curve
+  geom_line(mapping = aes(x=Year,y=`Young/successful nest`,linetype='Young/successful nest')) +
+  #scale_linetype_manual(values = c("Young/successful nest" = "solid")) +
   
-  # Linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  # Young per occupied nest linear regression model with 95% SE shaded area
+  geom_smooth(mapping = aes(x=Year,y=`Young/occupied nest`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
   
+  # Young per occupied nest mean horizontal line and label
+  #geom_line(mapping = aes(x=Year,y=MeanYoungPerOccupiedNest),linetype = "solid") +
+  #geom_text(mapping = aes(x=2000,y=MeanYoungPerOccupiedNest * 0.9),label=paste("Mean young/occupied nest = ",MeanYoungPerOccupiedNest,sep=""),linetype="dashed") +
+
+  # Young per occupied nest curve
+  geom_line(mapping = aes(x=Year,y=`Young/occupied nest`,linetype='Young/occupied nest')) +
+
+  # Fix the legend, define the line types
+  scale_linetype_manual(name="",values = c("Young/occupied nest" = "dotted","Young/successful nest" = "dashed"),) +
+  
+  # Label axes
   xlab("Year") +
-  ylab("Young per successful nest") +
+  ylab("Young per nest") +
+  
+  # Y limits
+  #ylim(1,2) +
   
    # Minimal theme
   theme_minimal() 
