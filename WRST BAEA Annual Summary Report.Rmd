@@ -44,7 +44,7 @@ library(sf)
 
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="SET UP REPORT PARAMETERS HERE"}
 
 # Set up report parameters here
 SurveyYear = 2023  # Set this to the desired report year
@@ -71,7 +71,7 @@ output:
 ---
 
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="Functions"}
 
 # Current date
 CurrentDate = Sys.Date() # Get the current date
@@ -90,6 +90,7 @@ GetLongDate <- function(Date) {
 # These counters are used to number the tables and figures. Each gets incremented after use.
 TableCounter = 1
 FigureCounter = 1
+
 ```
 
 Kyle Cutting^1^ and Scott Miller^2^
@@ -134,7 +135,7 @@ PStart = SurveyDatesDF$`Productivity survey start`
 PEnd = SurveyDatesDF$`Productivity survey end`
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="Success and productivity metrics"}
 # Gather info to present in the text below
 
 # Get the dates of the occupancy surveys
@@ -212,7 +213,7 @@ Five survey areas were defined along major riverways, and are described in Kozie
 
 A total of 609 km of riverways are surveyed annually, amounting to over 1200km of surveys.
 
-```{r echo=FALSE,fig.alt=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.cap=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep="")}
+```{r echo=FALSE,label="Survey area map",fig.alt=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.cap=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep="")}
 
 # Load shapefiles to be used in the maps later.
 Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
@@ -260,8 +261,6 @@ ggplot() +
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
 ```
 
 
@@ -291,7 +290,7 @@ During the second survey, all nest locations collected during prior surveys were
 
 # Results
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="Get metrics into variables to use in markdown text"}
 
 # Build some summary statistics to report in the markdown
 NestsLocated = CurrentSummaryDF$`Nests located`
@@ -315,7 +314,7 @@ Bald eagle occupancy survey flights were conducted in WRST from `r GetLongDate(O
 
 
 
-```{r echo=FALSE, label="Summary (counts)"}
+```{r echo=FALSE, label="Current survey metrics table"}
 # Summarize the eagle counts from the CurrentSummaryDF data frame (way above) into 
 # a table, transpose it so it fits the report better, modify the header, and output
 
@@ -327,8 +326,7 @@ CurrentSummaryDF_char_DF = as.data.frame(CurrentSummaryDF_char)
 colnames(CurrentSummaryDF_char_DF) = 'Result'
 
 #Output
-TableCaption = paste("Table ",TableCounter,". Results summary, ",SurveyYear," bald eagles survey.",sep="")
-kable(CurrentSummaryDF_char_DF, caption=TableCaption)
+kable(CurrentSummaryDF_char_DF, caption=paste("Table ",TableCounter,". Results summary, ",SurveyYear," bald eagles survey.",sep=""))
 
 # Increment the table counter
 TableCounter = TableCounter + 1
@@ -476,9 +474,7 @@ FigureCounter = FigureCounter + 1
 
 Table `r TableCounter` shows nest success metrics by river segment for the `r SurveyYear` bald eagle survey in WRST. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter`.
 
-Table `r TableCounter`. Bald eagle productivity and success rates by river segment, `r SurveyYear`.
-
-```{r echo=FALSE}
+```{r echo=FALSE,label="Bald eagle productivity and success rates by river segment"}
 
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT  [Year]
@@ -512,9 +508,8 @@ CurrentSuccessByYearRiverSegmentDF_str = sapply(CurrentSuccessByYearRiverSegment
 CurrentSuccessByYearRiverSegmentDF_str_t = t(CurrentSuccessByYearRiverSegmentDF_str)
 colnames(CurrentSuccessByYearRiverSegmentDF_str_t)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
 
-
 # Output the data
-kable(CurrentSuccessByYearRiverSegmentDF_str_t)
+kable(CurrentSuccessByYearRiverSegmentDF_str_t, caption = paste("Table ",TableCounter,". Bald eagle productivity and success rates by river segment, ",SurveyYear,".",sep=""))
 
 # Increment the table counter
 TableCounter = TableCounter + 1
@@ -522,7 +517,7 @@ TableCounter = TableCounter + 1
 
 ## Long-term trends
 
-```{r echo=FALSE}
+```{r echo=FALSE,label="Build long term success and productivity metrics over the entire surveying history to use in the markdown"}
 
 # Build long term success and productivity metrics over the entire surveying history to use in the markdown
 
@@ -556,12 +551,10 @@ ResultsText = paste("Over the ",LengthOfRecord," year history of the bald eagles
 
 `r ResultsText`
 
-Table `r TableCounter`. Long-term bald eagle productivity metrics, Copper River Valley.
-
-```{r echo=FALSE}
+```{r echo=FALSE,label="Long-term bald eagle productivity metrics, Copper River Valley"}
 
 # Show the long-term success and productivity metrics in a table
-kable(SuccessByYearDF)
+kable(SuccessByYearDF, caption = paste("Table ",TableCounter,". Long-term bald eagle productivity metrics, Copper River Valley.",sep=""))
 
 # Increment the table counter
 TableCounter = TableCounter + 1
@@ -710,12 +703,10 @@ Putera, J. and S.D. Miller. 2018. Protocol implementation plan for bald eagle mo
 
 ## Appendix: Long-term productivity data
 
-Table `r TableCounter`. Long term success and productivity metrics by year and river segment in the Copper River bald eagles monitoring study area.
-
 ```{r echo=FALSE, label = "Appendix A: Long-term productivity data"}
 
 # Long term productivity metrics
-kable(SuccessByYearRiverSegmentDF)
+kable(SuccessByYearRiverSegmentDF, caption = paste("Table ",TableCounter,". Long term success and productivity metrics by year and river segment in the Copper River bald eagles monitoring study area.",sep=""))
 
 # Increment the table counter
 TableCounter = TableCounter + 1
