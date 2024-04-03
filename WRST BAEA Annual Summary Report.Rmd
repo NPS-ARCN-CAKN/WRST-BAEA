@@ -390,7 +390,7 @@ National Park and Preserve"), size = 3, color = "black") +
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
 # Make a figure caption
-FigureCaption = paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",Mean,"% and mean success rate was ",MeanSuccess,"%.",sep='')
+FigureCaption = paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",CurrentSummaryDF$`% nest occupied`,"% and mean success rate was ",CurrentSummaryDF$`% nest success`,"%.",sep='')
 
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
