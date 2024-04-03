@@ -108,7 +108,7 @@ Fort Collins, Colorado
 
 Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, Haliaeetus leucocephalus, Population dynamics, monitoring, `r SurveyYear`
 
-```{r echo=FALSE label="Survey dates}
+```{r echo=FALSE, label="Survey dates"}
 # Get the survey dates
 Sql = paste("SELECT 
 --[Year],
@@ -262,6 +262,7 @@ FigureCaption = paste("Figure ",FigureCounter,". Map of the bald eagles monitori
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
+
 `r FigureCaption`
 
 ## Surveys
@@ -417,6 +418,7 @@ FigureCaption = paste("Figure ",FigureCounter,". Dispersion of successful bald e
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
+
 `r FigureCaption`
 
 ```{r echo=FALSE}
@@ -469,15 +471,13 @@ National Park and Preserve"), size = 3, color = "black") +
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
-#Increment the figure counter
-FigureCounter = FigureCounter + 1
-
 # Make a figure caption
 FigureCaption = paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",CurrentSummaryDF$`Young/occupied nest`," young per nest and mean productivity of successful nests was ",CurrentSummaryDF$`Young/successful nest`," young per nest.",sep='')
 
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
+
 `r FigureCaption`
 
 ## Productivity by river segment
@@ -487,8 +487,6 @@ Table `r TableCounter` shows nest success metrics by river segment for the `r Su
 Table `r TableCounter`. Bald eagle productivity and success rates by river segment, `r SurveyYear`.
 
 ```{r echo=FALSE}
-# Increment the table counter
-TableCounter = TableCounter + 1
 
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT  [Year]
@@ -522,9 +520,12 @@ CurrentSuccessByYearRiverSegmentDF_str = sapply(CurrentSuccessByYearRiverSegment
 CurrentSuccessByYearRiverSegmentDF_str_t = t(CurrentSuccessByYearRiverSegmentDF_str)
 colnames(CurrentSuccessByYearRiverSegmentDF_str_t)[1:5] = "" # Change the wierd first column with no name that R stuck in to Result
 
+
 # Output the data
 kable(CurrentSuccessByYearRiverSegmentDF_str_t)
 
+# Increment the table counter
+TableCounter = TableCounter + 1
 ```
 
 ## Long-term trends
@@ -568,6 +569,7 @@ Table `r TableCounter`. Long-term bald eagle productivity metrics, Copper River 
 
 ```{r echo=FALSE}
 
+# Show the long-term success and productivity metrics in a table
 kable(SuccessByYearDF)
 
 # Increment the table counter
@@ -620,14 +622,13 @@ FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the e
 FigureCounter = FigureCounter + 1
 
 ```
+
 `r FigureCaption`
 
 ### Young/successful nest
 
 ```{r echo=FALSE}
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
-
+# Make a linear model of young per successful nest by year
 lm <- lm(SuccessByYearDF$`Young/successful nest` ~ SuccessByYearDF$Year)
 lmstats = paste("Adj R2 = ",signif(summary(lm)$adj.r.squared, 5),
                      "Intercept =",signif(lm$coef[[1]],5 ),
@@ -669,6 +670,7 @@ FigureCaption = paste("Figure ",FigureCounter,". Young per successful nest by ye
 FigureCounter = FigureCounter + 1
 
 ```
+
 `r FigureCaption`
 
 ## Long term trends by river segment
@@ -676,8 +678,6 @@ FigureCounter = FigureCounter + 1
 Bald eagle monitoring has been done from 1989 through `r MaxYear` (Appendix A). 
 
 ```{r echo=FALSE}
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
 
 # plot % nest success faceted by river segment
 ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
@@ -697,12 +697,12 @@ FigureCaption = paste("Figure ",FigureCounter,". Nest success by year and river 
 FigureCounter = FigureCounter + 1
 
 ```
+ 
  `r FigureCaption`
 
 ```{r echo=FALSE}
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
 
+# Plot productivity by year by river segment
 ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
@@ -717,6 +717,7 @@ FigureCaption = paste("Figure ",FigureCounter,". Young per successful nest by ye
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
+
 `r FigureCaption`
 
 # Discussion
@@ -730,12 +731,15 @@ Putera, J. and S.D. Miller. 2018. Protocol implementation plan for bald eagle mo
 
 ## Appendix: Long-term productivity data
 
+Table `r TableCounter`. Long term success and productivity metrics by year and river segment in the Copper River bald eagles monitoring study area.
+
 ```{r echo=FALSE, label = "Appendix A: Long-term productivity data"}
-# Increment the table counter
-TableCounter = TableCounter + 1
 
 # Long term productivity metrics
 kable(SuccessByYearRiverSegmentDF)
+
+# Increment the table counter
+TableCounter = TableCounter + 1
 ```
 
 Results prior to 2004 from Kozie (1996). Results including and after 2004 are from WRST and the NPS Central Alaska Inventory and Monitoring Program (Putera and Miller, 2018).
