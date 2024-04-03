@@ -233,10 +233,14 @@ ggplot() +
   
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
-  
-```
 
-Figure `r FigureCounter`. Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers. 
+# Make a caption for the figure  
+FigureCaption = paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep="")
+
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
+```
+`r FigureCaption`
 
 ## Surveys
 
@@ -264,29 +268,6 @@ During the second survey, all nest locations collected during prior surveys were
 # Results
 
 ```{r echo=FALSE}
-
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
-
-# Get the survey dates
-Sql = paste("SELECT 
---[Year],
-[MinOccupancySurveyDate] as [Occupancy survey start]
-,[MaxOccupancySurveyDate] as [Occupancy survey end]
--- ,[NumberOfOccupancySurveyDays]
-,[MinProductivitySurveyDate] as [Productivity survey start]
-,[MaxProductivitySurveyDate] as [Productivity survey end]
--- ,[NumberOfProductivitySurveyDays]
-FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
-WHERE [Year] = ",SurveyYear,sep="")
-
-SurveyDatesDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
-
-# Build some survey date values to use later in the markdown text
-OStart = SurveyDatesDF$`Occupancy survey start`
-OEnd = SurveyDatesDF$`Occupancy survey end`
-PStart = SurveyDatesDF$`Productivity survey start`
-PEnd = SurveyDatesDF$`Productivity survey end`
 
 # Build some summary statistics to report in the markdown
 NestsLocated = CurrentSummaryDF$`Nests located`
@@ -409,8 +390,10 @@ National Park and Preserve"), size = 3, color = "black") +
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
 # Make a figure caption
-FigureCaption = paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",MeanOccupancy,"% and mean success rate was ",MeanSuccess,"%.",sep='')
+FigureCaption = paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",Mean,"% and mean success rate was ",MeanSuccess,"%.",sep='')
 
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
 ```
 `r FigureCaption`
 
@@ -470,7 +453,8 @@ FigureCounter = FigureCounter + 1
 # Make a figure caption
 FigureCaption = paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",MeanYoungPerOccupiedNest," young per nest and mean productivity of successful nests was ",MeanYoungPerSuccessfulNest," young per nest.",sep='')
 
-
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
 ```
 `r FigureCaption`
 
@@ -607,11 +591,14 @@ ggplot(data=SuccessByYearDF) +
   # Minimal theme
   theme_minimal()
   
-  
+  # Make a figure caption
+FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the entire Copper River study area (",lmstats,"). Dashed line shows mean nest success rate of ",MeanSuccess,"% (full success and productivity metrics table is in Appendix).",sep='')
+
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
 
 ```
-
-Figure `r FigureCounter`. Nest success by year: Entire study area (`r lmstats`. Mean nest success [dashed line]=`r MeanSuccess`%). Data in Appendix.
+`r FigureCaption`
 
 ### Young/successful nest
 
@@ -653,9 +640,14 @@ ggplot(data=SuccessByYearDF) +
    # Minimal theme
   theme_minimal() 
 
-```
+# Make a figure caption
+FigureCaption = paste("Figure ",FigureCounter,". Young per successful nest by year over the entire Copper River study area (",lmstats,"). Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`).  (full success and productivity metrics table is in Appendix).",sep='')
 
-Figure `r FigureCounter`. Young per successful nest by year, entire study area (`r lmstats`. Mean young/successful nest [dashed line]=`r  MeanYoungPerSuccessfulNest`). Data in Appendix.
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
+
+```
+`r FigureCaption`
 
 ## Long term trends by river segment
 
@@ -676,10 +668,14 @@ ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) 
   theme_minimal() +
   facet_wrap(vars(`RiverSegment`))
 
+# Make a figure caption
+FigureCaption = paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep='')
+
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
 
 ```
-
-Figure `r FigureCounter`. Nest success by year and river segment (No data on productivity by river segment before 2004). Data in Appendix.
+ `r FigureCaption`
 
 ```{r echo=FALSE}
 # Increment the figure counter
@@ -694,9 +690,12 @@ ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) 
   theme_minimal() +
   facet_wrap(vars(`RiverSegment`))
 
-```
+FigureCaption = paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep='')
 
-Figure `r FigureCounter`. Young per successful nest by year and river segment (No data on productivity by river segment before 2004). Data in Appendix.
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
+```
+`r FigureCaption`
 
 # Discussion
 
@@ -717,16 +716,35 @@ TableCounter = TableCounter + 1
 kable(SuccessByYearRiverSegmentDF)
 ```
 
-Results prior to 2004 from Kozie (1996). Results including and after 2004 from WRST and the NPS Central Alaska Inventory and Monitoring Program (Putera and Miller, 2018).
+Results prior to 2004 from Kozie (1996). Results including and after 2004 are from WRST and the NPS Central Alaska Inventory and Monitoring Program (Putera and Miller, 2018).
 
-
-# Appendix B: Extended information about the survey
+# Extended information about the survey
 
 Information in this appendix is not intended for inclusion in the report; it's included to provide context to the survey for the authors to use or discard, as needed.
 
 ## Survey dates summary
 
-```{r echo=FALSE, label = "Appendix B: Supplementary information"}
+```{r echo=FALSE, label = "Survey dates summary"}
+# Get the survey dates
+Sql = paste("SELECT 
+--[Year],
+[MinOccupancySurveyDate] as [Occupancy survey start]
+,[MaxOccupancySurveyDate] as [Occupancy survey end]
+-- ,[NumberOfOccupancySurveyDays]
+,[MinProductivitySurveyDate] as [Productivity survey start]
+,[MaxProductivitySurveyDate] as [Productivity survey end]
+-- ,[NumberOfProductivitySurveyDays]
+FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
+WHERE [Year] = ",SurveyYear,sep="")
+
+SurveyDatesDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+
+# Build some survey date values to use later in the markdown text
+OStart = SurveyDatesDF$`Occupancy survey start`
+OEnd = SurveyDatesDF$`Occupancy survey end`
+PStart = SurveyDatesDF$`Productivity survey start`
+PEnd = SurveyDatesDF$`Productivity survey end`
+
 # Transpose the survey dates data frame
 SurveyDatesDF_t = t(SurveyDatesDF)
 
