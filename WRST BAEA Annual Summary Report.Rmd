@@ -108,6 +108,28 @@ Fort Collins, Colorado
 
 Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, Haliaeetus leucocephalus, Population dynamics, monitoring, `r SurveyYear`
 
+```{r echo=FALSE label="Survey dates}
+# Get the survey dates
+Sql = paste("SELECT 
+--[Year],
+[MinOccupancySurveyDate] as [Occupancy survey start]
+,[MaxOccupancySurveyDate] as [Occupancy survey end]
+-- ,[NumberOfOccupancySurveyDays]
+,[MinProductivitySurveyDate] as [Productivity survey start]
+,[MaxProductivitySurveyDate] as [Productivity survey end]
+-- ,[NumberOfProductivitySurveyDays]
+FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
+WHERE [Year] = ",SurveyYear,sep="")
+
+SurveyDatesDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+
+# Build some survey date values to use later in the markdown text
+OStart = SurveyDatesDF$`Occupancy survey start`
+OEnd = SurveyDatesDF$`Occupancy survey end`
+PStart = SurveyDatesDF$`Productivity survey start`
+PEnd = SurveyDatesDF$`Productivity survey end`
+```
+
 ```{r echo=FALSE}
 # Gather info to present in the text below
 
@@ -451,7 +473,7 @@ National Park and Preserve"), size = 3, color = "black") +
 FigureCounter = FigureCounter + 1
 
 # Make a figure caption
-FigureCaption = paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",MeanYoungPerOccupiedNest," young per nest and mean productivity of successful nests was ",MeanYoungPerSuccessfulNest," young per nest.",sep='')
+FigureCaption = paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",CurrentSummaryDF$`Young/occupied nest`," young per nest and mean productivity of successful nests was ",CurrentSummaryDF$`Young/successful nest`," young per nest.",sep='')
 
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
@@ -725,25 +747,6 @@ Information in this appendix is not intended for inclusion in the report; it's i
 ## Survey dates summary
 
 ```{r echo=FALSE, label = "Survey dates summary"}
-# Get the survey dates
-Sql = paste("SELECT 
---[Year],
-[MinOccupancySurveyDate] as [Occupancy survey start]
-,[MaxOccupancySurveyDate] as [Occupancy survey end]
--- ,[NumberOfOccupancySurveyDays]
-,[MinProductivitySurveyDate] as [Productivity survey start]
-,[MaxProductivitySurveyDate] as [Productivity survey end]
--- ,[NumberOfProductivitySurveyDays]
-FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
-WHERE [Year] = ",SurveyYear,sep="")
-
-SurveyDatesDF = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
-
-# Build some survey date values to use later in the markdown text
-OStart = SurveyDatesDF$`Occupancy survey start`
-OEnd = SurveyDatesDF$`Occupancy survey end`
-PStart = SurveyDatesDF$`Productivity survey start`
-PEnd = SurveyDatesDF$`Productivity survey end`
 
 # Transpose the survey dates data frame
 SurveyDatesDF_t = t(SurveyDatesDF)
