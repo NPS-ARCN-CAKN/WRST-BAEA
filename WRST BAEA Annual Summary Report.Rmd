@@ -302,7 +302,7 @@ PctSuccessful = signif(CurrentSummaryDF$`% nest success`,2)
 
 # Build a paragraph of information about the survey results into a variable. Embed this variable in the markdown text later (the stats could be embedded in the markdown individually, but for some reason it doesn't always work
 #consistently, so I built the paragraph here.)
-ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights. Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests, ',Successful,' successfully produced young (',PctSuccessful,'%). Occupied nest production was ', YngPerOccupiedNest,' and successful nests produced a mean of ',YngPerNest,' young.',sep='')
+ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights. Of these nests, ',Occupied,' were occupied (', PctOccupied,'%). and of occupied nests, ',Successful,' successfully produced young (',PctSuccessful,'%). Occupied nest production averaged ', YngPerOccupiedNest,' young per nest and successful nests produced a mean of ',YngPerNest,' young.',sep='')
 
 ```
 
@@ -358,7 +358,7 @@ ProductivityDataFrame = GetDataFrameFromDatabase(Sql)
 title = paste("Dispersion of successful nests, ", SurveyYear)
 
 # Query out just the successful nests
-SuccessFulNestsDataFrame = subset(ProductivityDataFrame,StatusCode_P == 'S')
+#SuccessFulNestsDataFrame = subset(ProductivityDataFrame,StatusCode_P == 'S')
 
 # Plot the nest success on a map
 ggplot() +
@@ -408,15 +408,71 @@ National Park and Preserve"), size = 3, color = "black") +
   # Bremner River label
   geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
-```
+# Make a figure caption
+FigureCaption = paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",MeanOccupancy,"% and mean success rate was ",MeanSuccess,"%.",sep='')
 
-Figure `r FigureCounter`. Dispersion of successful bald eagle nests in the Copper River Valley in in `r SurveyYear`. Green areas show areas where nests were most successful at producing young.
+```
+`r FigureCaption`
 
 ```{r echo=FALSE}
+
+# Productivity map
+ggplot() +
+  
+  # Blue rectangle to make the background of the map blue
+  geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
+  
+  # Alaska outline
+  geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
+  
+  # Park boundary
+  geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
+
+    # Rivers
+  geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +  
+  
+  # Productive nests, increasing size with productivity
+  geom_point(data=subset(ProductivityDataFrame,Status=="Succeeded"), aes(x = Longitude, y = Latitude, colour=Status, size=factor(NumYng), na.rm = TRUE),color="black") +
+  
+  # Override the size attributes assigned by geom_point. 'values' is size of symbol.
+  scale_size_manual(name="Young produced",values = c(2,5),breaks = c(1,2), labels = c("1","2")) +    
+  
+  # Set the map limits
+  coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
+  xlab('Longitude') +
+  ylab('Latitude') +
+  
+  # Minimal theme
+  theme_minimal() +
+  
+  # WRST Label
+  geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
+National Park and Preserve"), size = 3, color = "black") +
+  
+    # Upper Copper River label
+  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Middle Copper River label
+  geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Lower Copper River label
+  geom_text(aes(x = -145.2, y = 60.8, label = "Lower Copper River"), size = 3, color = "dodgerblue4") +
+  
+  # Chitina River label
+  geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
+  
+  # Bremner River label
+  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
+
 #Increment the figure counter
 FigureCounter = FigureCounter + 1
 
+# Make a figure caption
+FigureCaption = paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",MeanYoungPerOccupiedNest," young per nest and mean productivity of successful nests was ",MeanYoungPerSuccessfulNest," young per nest.",sep='')
+
+
 ```
+`r FigureCaption`
 
 ## Productivity by river segment
 
@@ -632,7 +688,7 @@ FigureCounter = FigureCounter + 1
 ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm") +
-  ylim(1,2) +
+  ylim(0,2) +
   
    # Minimal theme
   theme_minimal() +
