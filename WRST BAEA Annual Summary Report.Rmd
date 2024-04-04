@@ -9,39 +9,57 @@ output:
 
 ```{=html}
 <style>
-    h1 {
-        font-family: "Arial";
-        font-size: 16px;
-    }
-    
-    h1.title {
-      font-family: "Times New Roman";
-      font-size: 20px;
-      font-weight: bold;
-    }
-    
-    h2 {
-        font-family: "Times New Roman";
-    }
-    
-    h3 {
-        font-family: "Times New Roman";
-    }
-    
-    p {
-        font-family: "Times New Roman";
-        font-size: 11.5px;
-    }
-    
-    caption {
-        font-family: "Arial";
-        font-size: 9px;
-    }
-    
-    p caption {
-        font-family: "Arial";
-        font-size: 9px;
-    }
+h1.title {
+  font-family: "Times New Roman";
+  font-size: 20px;
+  font-weight: bold;
+}
+
+h1 {
+    font-family: "Arial";
+    font-size: 16px;
+    font-weight: bold;
+}
+
+
+h2 {
+  font-family: "Arial";
+  font-size: 11.5px;
+  font-weight: bold;
+}
+
+h3 {
+  font-family: "Arial";
+  font-size: 10.5px;
+  font-weight: bold;
+}
+
+p {
+    font-family: "Times New Roman";
+    font-size: 11.5px;
+}
+
+caption {
+    font-family: "Arial";
+    font-size: 10px;
+}
+
+p caption {
+    font-family: "Arial";
+    font-size: 10px;
+}
+
+tr {
+    font-family: "Arial";
+    font-size: 9px;
+}
+
+.header{
+  font-family: "Arial";
+  font-size: 9px;
+  font-weight: bold;
+}
+
 </style>
 ```
 
@@ -610,6 +628,37 @@ ggplot(data=SuccessByYearDF) +
   # Minimal theme
   theme_minimal()
   
+
+ggplot(data=SuccessByYearDF) +
+  
+  # % nest success linear regression model with 95% SE shaded area
+  geom_smooth(mapping = aes(x=Year,y=`% nest success`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  
+  # % nest success curve
+  geom_line(mapping = aes(x=Year,y=`% nest success`,linetype='Percent of occupied nests that were successful')) +
+  scale_linetype_manual(values = c("% nest success" = "solid")) +
+  
+  
+  # % nest success linear regression model with 95% SE shaded area
+  geom_smooth(mapping = aes(x=Year,y=`% nest occupied`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  
+  # % nest occupied curve
+  geom_line(mapping = aes(x=Year,y=`% nest occupied`,linetype='Percent of nests that were occupied')) +
+
+  # Fix the legend, define the line types
+  scale_linetype_manual(name="",values = c("Percent of nests that were occupied" = "dotted","Percent of occupied nests that were successful" = "dashed"),) +
+  
+  # Label axes
+  xlab("Year") +
+  ylab("Success rate") +
+  
+  # Y limits
+  ylim(0,100) +
+  
+   # Minimal theme
+  theme_minimal() 
+
+
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 
