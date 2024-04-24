@@ -76,6 +76,8 @@ library(sf)
 # Make kable show blanks for NAs
 options(knitr.kable.NA = '')
 
+# These parameters restrict the dimensions of plots to 6 metric inches so they don't blow out Word
+FigWidth = 6
 ```
 
 ```{r echo=FALSE,label="SET UP REPORT PARAMETERS HERE"}
@@ -154,7 +156,7 @@ Sql = paste("SELECT [Year]
 ,[Occupied]
 ,[Successful]
 ,[Productivity unknown]
-,[Eggs]
+--,[Eggs]
 ,[Young fledged]
 ,[% nest occupied]
 ,[% nest success]
@@ -180,12 +182,13 @@ Successful = Summary_SuccessByYearDataFrame_Current$Successful
 YoungFledged = Summary_SuccessByYearDataFrame_Current$`Young fledged`
 NF = Summary_SuccessByYearDataFrame_Current$`Occupied nests not found during productivity survey)`
 NC = Summary_SuccessByYearDataFrame_Current$`Occupied nests not counted during productivity survey)`
-YngPerOccupiedNest = signif(Summary_SuccessByYearDataFrame_Current$`Young/occupied nest`,2)
-YngPerSuccessfulNest = signif(Summary_SuccessByYearDataFrame_Current$`Young/successful nest`,2)
+YngPerOccupiedNest = signif(Summary_SuccessByYearDataFrame_Current$`Young/occupied nest`,3)
+YngPerSuccessfulNest = signif(Summary_SuccessByYearDataFrame_Current$`Young/successful nest`,3)
 PctOccupied = signif(Summary_SuccessByYearDataFrame_Current$`% nest occupied`,2)
 PctSuccessful = signif(Summary_SuccessByYearDataFrame_Current$`% nest success`,2)
 
-ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Park and Preserve (WRST) contains a high density of nesting Bald Eagles in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In ",SurveyYear," we conducted an aerial bald eagle productivity survey in and around the park. Methods followed Putera J. and Miller S.D., 2018. Occupancy surveys were flown from ",GetLongDate(OStart)," to ",GetLongDate(OEnd),", followed by productivity surveys from ",GetLongDate(PStart)," to ",GetLongDate(PEnd),". We observed ",NestsLocated," nests, of which ",Occupied," were occupied (",PctOccupied,"%). Productivity surveys recorded ",Successful," nests producing young (",PctSuccessful,"% of occupied nests). Successful nests resulted in ",YoungFledged," young, an average of ",YngPerSuccessfulNest," young per successful nest. ",NF," nests were not found., and ",NC," were not counted.",sep="")
+ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, contains a high density of nesting Bald Eagles <i>(Haliaeetus leucocephalus)</i> and the National Park Service has identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In ",SurveyYear," we conducted an aerial bald eagle productivity survey in and around the park. Nest occupancy surveys were flown from ",GetLongDate(OStart)," to ",GetLongDate(OEnd),", followed by productivity surveys from ",GetLongDate(PStart)," to ",GetLongDate(PEnd),". We observed ",NestsLocated," nests, of which ",Occupied," were occupied (",PctOccupied,"%). Productivity surveys revealed that ",Successful," occupied nests producing young (",PctSuccessful,"% of occupied nests). Successful nests resulted in ",YoungFledged," young, an average of ",YngPerSuccessfulNest," young per successful nest.",sep="")
+
 
 
 ```
@@ -213,11 +216,11 @@ Fort Collins, Colorado
 
 `r ExecutiveSummaryText`
 
-Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, Haliaeetus leucocephalus, Population dynamics, monitoring, `r SurveyYear`
+Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, *Haliaeetus leucocephalus*, Population dynamics, monitoring, `r SurveyYear`
 
 # Introduction
 
-The Copper River in WRST contains a high density of nesting Bald Eagles in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor in Wrangell-St. Elias National Park and Preserve (WRST). Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. Further, Bald Eagles nesting along the Copper River in WRST may face increasing disturbance due to forestry activities and increased human visitation.
+The Copper River in WRST contains a high density of nesting Bald Eagles *(Haliaeetus leucocephalus)* in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor in Wrangell-St. Elias National Park and Preserve (WRST). Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. Further, Bald Eagles nesting along the Copper River in WRST may face increasing disturbance due to forestry activities and increased human visitation.
 
 Bald eagles (*Haliaeetus leucocephalus*) are common breeders in Wrangell-St Elias National Park and Preserve (WRST). Most nests are concentrated along the Copper River and its major tributaries. Potential threats to nesting eagles include habitat loss, human disturbance, and exposure to environmental contaminants that may affect reproduction or survival. Specific threats include highway construction from Chitina to Cordova, development and timber harvest on private lands along rivers, lakes, and coastal areas, potential increases in commercial and recreational fishing on the Copper River and its tributaries, camping or other recreational or subsistence access/use activities (including use of ATVs and jet boats) in sensitive breeding areas, and environmental contamination from local and global sources. Pollution is of special concern in the wake of the Exxon-Valdez oil spill that occurred near Valdez in March of 1989. The TransAlaska Pipeline crosses three tributaries of the Copper River---the Gulkana, Tazlina, and Klutina rivers. These rivers are also crossed by the Richardson Highway, which is heavily used by tanker trucks carrying petroleum products to and from the Valdez terminal. These are all important reasons to document long-term trends on population density and reproductive rates for bald eagles.
 
@@ -249,7 +252,7 @@ Five survey areas were defined along major riverways, and are described in Kozie
 
 A total of 609 km of riverways are surveyed annually, amounting to over 1200km of surveys.
 
-```{r echo=FALSE,label="Survey area map",fig.alt=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.cap=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep="")}
+```{r echo=FALSE,label="Survey area map",fig.alt=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.cap=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.width=FigWidth}
 
 # Load shapefiles to be used in the maps later.
 Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
@@ -353,7 +356,7 @@ kable(Summary_SuccessByYearDataFrame_Current_char_DF,col.names=c("Metric","Resul
 # Increment the table counter
 TableCounter = TableCounter + 1
 ```
-```{r echo=FALSE, label="Success map",fig.alt=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",Occupied,"% and mean success rate was ",Successful,"%.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",PctOccupied,"% and mean success rate was ",PctSuccessful,"%.",sep='')}
+```{r echo=FALSE, label="Success map",fig.alt=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",Occupied,"% and mean success rate was ",Successful,"%.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",PctOccupied,"% and mean success rate was ",PctSuccessful,"%.",sep=''),fig.width=FigWidth}
 
 # Get the spatial locations of successful and failed nests for a map
 Sql = paste("SELECT   
@@ -438,7 +441,7 @@ National Park and Preserve"), size = 3, color = "black") +
 FigureCounter = FigureCounter + 1
 ```
 
-```{r echo=FALSE,label="Productivity map",fig.alt=paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",YngPerOccupiedNest," young per nest and mean productivity of successful nests was ",YngPerSuccessfulNest," young per nest.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",YngPerOccupiedNest," young per nest and mean productivity of successful nests was ",YngPerSuccessfulNest," young per nest.",sep='')}
+```{r echo=FALSE,label="Productivity map",fig.alt=paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",YngPerOccupiedNest," young per nest and mean productivity of successful nests was ",YngPerSuccessfulNest," young per nest.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",YngPerOccupiedNest," young per nest and mean productivity of successful nests was ",YngPerSuccessfulNest," young per nest.",sep=''),fig.width=FigWidth}
 
 # Productivity map
 ggplot() +
@@ -625,7 +628,7 @@ FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the C
 
 ```
 
-```{r echo=FALSE,label="Percent nest success by year",fig.alt=FigureCaption,fig.cap=FigureCaption}
+```{r echo=FALSE,label="Percent nest success by year",fig.alt=FigureCaption,fig.cap=FigureCaption,fig.width=FigWidth}
 
 # Plot historical occupancy and success rates for the whole watershed
 ggplot(data=Summary_SuccessByYearDataFrame) +
@@ -706,7 +709,7 @@ FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year
 
 ```
 
-```{r echo=FALSE,label="Productivity by year plot",fig.alt=FigureCaption,fig.cap=FigureCaption}
+```{r echo=FALSE,label="Productivity by year plot",fig.alt=FigureCaption,fig.cap=FigureCaption,fig.width=FigWidth}
 
 # Plot productivity
 ggplot(data=Summary_SuccessByYearDataFrame) +
@@ -798,7 +801,7 @@ TableCounter = TableCounter + 1
 
 ### Long term nest success by river segment
 
-```{r echo=FALSE,label="Percent nest success by year by river segment",fig.alt=paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep='')}
+```{r echo=FALSE,label="Percent nest success by year by river segment",fig.alt=paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.width=FigWidth}
 
 # plot % nest success faceted by river segment
 ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
@@ -820,7 +823,7 @@ Note: Faber (1989) reported 50% success rate on the Chitina River segment in 198
 
 ### Long term productivity by river segment
 
-```{r echo=FALSE,label="Productivity by year by river segment",fig.alt=paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep='')}
+```{r echo=FALSE,label="Productivity by year by river segment",fig.alt=paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.width=FigWidth}
 
 # Plot productivity by year by river segment
 ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
@@ -1021,21 +1024,12 @@ GetSummaryByRiverSegment = function(Segment){
 # Present metrics by river segment 
 Segment = "Lower Copper" # Specify the river segment to isolate
 
-# Make a caption for the table
-# TableCaption = paste("Table ",TableCounter,". Long term bald eagle nesting success and productivity in the ",Segment," river segment.",sep="")
-
-# Show the metrics for the river segment
-# kable(GetSummaryByRiverSegment(Segment),caption=TableCaption)
-
-# Increment the table counter
-# TableCounter = TableCounter + 1
-
 # Generate a figure caption for the plot that will be generated in the next R chunk
 FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter)
 
 ```
 
-```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption}
+```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth}
 
 # Generate a plot of success for the river segment specified by Segment
 GetRiverSegmentSuccessPlot(Segment)
@@ -1052,21 +1046,12 @@ FigureCounter = FigureCounter + 1
 # Present metrics by river segment 
 Segment = "Bremner" # Specify the river segment to isolate
 
-# Make a caption for the table
-# TableCaption = paste("Table ",TableCounter,". Long term bald eagle nesting success and productivity in the ",Segment," river segment.",sep="")
-
-# Show the metrics for the river segment
-# kable(GetSummaryByRiverSegment(Segment),caption=TableCaption)
-
-# Increment the table counter
-# TableCounter = TableCounter + 1
-
 # Generate a figure caption for the plot that will be generated in the next R chunk
 FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter)
 
 ```
 
-```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption}
+```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth}
 
 # Generate a plot of success for the river segment specified by Segment
 GetRiverSegmentSuccessPlot(Segment)
@@ -1076,28 +1061,18 @@ FigureCounter = FigureCounter + 1
 
 ```
 
-
 ### Chitina
 
 ```{r echo=FALSE}
 # Present metrics by river segment 
 Segment = "Chitina" # Specify the river segment to isolate
 
-# Make a caption for the table
-# TableCaption = paste("Table ",TableCounter,". Long term bald eagle nesting success and productivity in the ",Segment," river segment.",sep="")
-
-# Show the metrics for the river segment
-# kable(GetSummaryByRiverSegment(Segment),caption=TableCaption)
-
-# Increment the table counter
-# TableCounter = TableCounter + 1
-
 # Generate a figure caption for the plot that will be generated in the next R chunk
 FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter)
 
 ```
 
-```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption}
+```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth}
 
 # Generate a plot of success for the river segment specified by Segment
 GetRiverSegmentSuccessPlot(Segment)
@@ -1114,21 +1089,12 @@ FigureCounter = FigureCounter + 1
 # Present metrics by river segment 
 Segment = "Middle Copper" # Specify the river segment to isolate
 
-# Make a caption for the table
-# TableCaption = paste("Table ",TableCounter,". Long term bald eagle nesting success and productivity in the ",Segment," river segment.",sep="")
-
-# Show the metrics for the river segment
-# kable(GetSummaryByRiverSegment(Segment),caption=TableCaption)
-
-# Increment the table counter
-# TableCounter = TableCounter + 1
-
 # Generate a figure caption for the plot that will be generated in the next R chunk
 FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter)
 
 ```
 
-```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption}
+```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth}
 
 # Generate a plot of success for the river segment specified by Segment
 GetRiverSegmentSuccessPlot(Segment)
@@ -1145,21 +1111,12 @@ FigureCounter = FigureCounter + 1
 # Present metrics by river segment 
 Segment = "Upper Copper" # Specify the river segment to isolate
 
-# Make a caption for the table
-# TableCaption = paste("Table ",TableCounter,". Long term bald eagle nesting success and productivity in the ",Segment," river segment.",sep="")
-
-# Show the metrics for the river segment
-# kable(GetSummaryByRiverSegment(Segment),caption=TableCaption)
-
-# Increment the table counter
-# TableCounter = TableCounter + 1
-
 # Generate a figure caption for the plot that will be generated in the next R chunk
 FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter)
 
 ```
 
-```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption}
+```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth}
 
 # Generate a plot of success for the river segment specified by Segment
 GetRiverSegmentSuccessPlot(Segment)
