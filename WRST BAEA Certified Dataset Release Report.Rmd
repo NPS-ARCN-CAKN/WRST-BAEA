@@ -1,0 +1,198 @@
+---
+title: "WRST BAEA Certified Data Release Report"
+output: html_document
+---
+
+
+```{=html}
+<style>
+h1.title {
+  font-family: "Times New Roman";
+  font-size: 24px;
+  font-weight: bold;
+}
+
+h1 {
+    font-family: "Arial";
+    font-size: 20px;
+    font-weight: bold;
+}
+
+
+h2 {
+  font-family: "Arial";
+  font-size: 16px;
+  font-weight: bold;
+}
+
+h3 {
+  font-family: "Arial";
+  font-size: 14px;
+  font-weight: bold;
+}
+
+p {
+    font-family: "Times New Roman";
+    font-size: 12px;
+}
+
+.caption {
+    font-family: "Arial";
+    font-size: 10px;
+}
+
+p .caption {
+    font-family: "Arial";
+    font-size: 10px;
+}
+
+tr {
+    font-family: "Arial";
+    font-size: 10px;
+}
+
+.header{
+  font-family: "Arial";
+  font-size: 10px;
+  font-weight: bold;
+}
+
+</style>
+```
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
+
+# Load libraries
+library(odbc)
+library(knitr)
+library(ggplot2)
+library(sp)
+library(sf)
+
+# Make kable show blanks for NAs
+options(knitr.kable.NA = '')
+
+# These parameters restrict the dimensions of plots to 6 metric inches so they don't blow out Word
+FigWidth = 6
+```
+
+```{r echo=FALSE,label="SET UP REPORT PARAMETERS HERE"}
+
+# Build a database connection
+#ConnectionString = 'Driver={SQL Server};Server=inpyugamsvm01\\nuna;Database=CAKN_BaldEagles;Trusted_connection=yes'
+Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "inpyugamsvm01\\nuna", Database = "CAKN_BaldEagles")
+
+# Make kable show blanks for NAs
+options(knitr.kable.NA = '')
+
+# Function to convert a date string to a long date
+GetLongDate <- function(Date) {
+  return(format(as.Date(Date), format="%B %d, %Y "))
+}
+
+```
+
+# Productivity 
+
+Productivity and success was recorded by WRST from 1989-1996 (Kozie, 1996)[https://irma.nps.gov/DataStore/Reference/Profile/2238328]. These metrics are available from the [NPS Data Store](https://irma.nps.gov/DataStore/Reference/Profile/2297286). Field data observations for these years remain unavailable as of the date of this report.
+
+
+
+```{r , echo=FALSE}
+
+# This query gets the survey details from the GSPE_Surveys database table
+Sql = paste("SELECT TOP (1000) [Year]
+      ,[MinOccupancySurveyDate] as [Occ. survey start]
+      ,[MaxOccupancySurveyDate] as [Occ. survey start]
+      ,[NumberOfOccupancySurveyDays] as [Days]
+      ,[MinProductivitySurveyDate] as [Prod. survey start]
+      ,[MaxProductivitySurveyDate] as [Prod. survey start]
+      ,[NumberOfProductivitySurveyDays] as [Days]
+      ,[NumberOfRecords] as Records
+  FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear]",sep="")
+DF = dbGetQuery(Connection,Sql)
+
+FirstSurveyYear = min(DF$Year)
+LatestSurveyYear = max(DF$Year)
+
+kable(DF)
+```
+
+Field data observations from `r FirstSurveyYear` to `r LatestSurveyYear` are available in this dataset release.
+
+
+```{r , echo=FALSE}
+
+# This query gets the survey details from the GSPE_Surveys database table
+Sql = paste("SELECT top 10 [Nest_ID]
+      ,[IsActive]
+      ,[DiscoverDate]
+      ,[FirstSightingDate]
+      ,[LastSightingDate]
+      ,[Duration (years)]
+      ,[RiverSegment]
+      ,[TreeSpecies]
+      ,[Species]
+      ,[TreeIsDead]
+      ,[NumberOfTimesNotFoundInTheLast2Surveys]
+      ,[OccupancyObservations]
+      ,[NestInitiations]
+      ,[ProductivityObservations]
+      ,[NumberOfTimesSuccessful]
+      ,[PctSuccessful]
+      ,[AvgYoungPerSuccessfulNest]
+      ,[EarliestOccupancyRecord]
+      ,[LatestOccupancyRecord]
+      ,[EarliestProductivityRecord]
+      ,[LatestProductivityRecord]
+      ,[YearsUsed]
+      ,[Lat-NAD83]
+      ,[Lon-NAD83]
+      ,[NestSub]
+      ,[TerritoryID]
+      ,[Comments]
+      ,[WKT]
+  FROM [CAKN_BaldEagles].[dbo].[Dataset_Nests]",sep="")
+DF = dbGetQuery(Connection,Sql)
+
+kable(DF)
+```
+
+# Nests 
+```{r , echo=FALSE}
+
+# This query gets the survey details from the GSPE_Surveys database table
+Sql = paste("SELECT top 10 [Nest_ID]
+      ,[IsActive]
+      ,[DiscoverDate]
+      ,[FirstSightingDate]
+      ,[LastSightingDate]
+      ,[Duration (years)]
+      ,[RiverSegment]
+      ,[TreeSpecies]
+      ,[Species]
+      ,[TreeIsDead]
+      ,[NumberOfTimesNotFoundInTheLast2Surveys]
+      ,[OccupancyObservations]
+      ,[NestInitiations]
+      ,[ProductivityObservations]
+      ,[NumberOfTimesSuccessful]
+      ,[PctSuccessful]
+      ,[AvgYoungPerSuccessfulNest]
+      ,[EarliestOccupancyRecord]
+      ,[LatestOccupancyRecord]
+      ,[EarliestProductivityRecord]
+      ,[LatestProductivityRecord]
+      ,[YearsUsed]
+      ,[Lat-NAD83]
+      ,[Lon-NAD83]
+      ,[NestSub]
+      ,[TerritoryID]
+      ,[Comments]
+      ,[WKT]
+  FROM [CAKN_BaldEagles].[dbo].[Dataset_Nests]",sep="")
+DF = dbGetQuery(Connection,Sql)
+
+kable(DF)
+```
