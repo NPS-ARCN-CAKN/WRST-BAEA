@@ -1,2 +1,3 @@
 # WRST BAEA Annual Report Template (R Markdown)
-This repository contains an R Markdown script that can be run to generate a draft annual report for the WRST BAEA monitoring program. While you may knit the results to Word, the author's experience has been that it is better to knit to html and then open the resulting html document in Word. From there you may apply the NRDS Word Template to it. 
+
+This repository contains R Markdown scripts related to the National Park Service’s Bald Eagle monitoring program in Wrangell – St. Elias National Park and Preserve. 
