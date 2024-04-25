@@ -73,6 +73,7 @@ library(ggplot2)
 library(sp)
 library(sf)
 
+
 # Make kable show blanks for NAs
 options(knitr.kable.NA = '')
 
