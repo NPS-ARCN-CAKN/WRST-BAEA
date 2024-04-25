@@ -49,3 +49,5 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 WRST-BAEA-Annual-Summary-Report.html
+WRST-BAEA-Annual-Summary-Report.html
+*.html
