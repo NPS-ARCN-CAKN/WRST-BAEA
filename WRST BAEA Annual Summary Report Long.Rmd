@@ -9,55 +9,78 @@ output:
 
 ```{=html}
 <style>
-h1.title {
+
+body {
+    font-family: "Times New Roman";
+    font-size: 11.5pt;
+    color: black;
+}
+
+.title {
   font-family: "Times New Roman";
-  font-size: 24px;
+  font-size: 16pt;
   font-weight: bold;
+  color: black;
 }
 
 h1 {
     font-family: "Arial";
-    font-size: 20px;
+    font-size: 16pt;
     font-weight: bold;
+    color: black;
 }
 
 
 h2 {
   font-family: "Arial";
-  font-size: 16px;
+  font-size: 11.5pt;
   font-weight: bold;
+  color: black;
 }
 
 h3 {
   font-family: "Arial";
-  font-size: 14px;
+  font-size: 10.5pt;
   font-weight: bold;
+  color: black;
+}
+
+h4 {
+    font-family: "Times New Roman";
+    font-size: 12pt;
+    color: black;
 }
 
 p {
     font-family: "Times New Roman";
-    font-size: 12px;
+    font-size: 11.5pt;
+    color: black;
 }
 
 .caption {
     font-family: "Arial";
-    font-size: 10px;
+    font-size: 10pt;
+    color: black;
 }
 
-p .caption {
+th {
     font-family: "Arial";
-    font-size: 10px;
+    font-size: 9pt;
+    font-weight: bold;
+    color: black;
 }
 
-tr {
+tr,td,table {
     font-family: "Arial";
-    font-size: 10px;
+    font-size: 9pt;
+    color: black;
 }
 
 .header{
   font-family: "Arial";
-  font-size: 10px;
+  font-size: 10pt;
   font-weight: bold;
+  color: black;
 }
 
 </style>
@@ -72,6 +95,7 @@ library(knitr)
 library(ggplot2)
 library(sp)
 library(sf)
+library(dplyr)
 
 # Make kable show blanks for NAs
 options(knitr.kable.NA = '')
@@ -141,7 +165,7 @@ Sql = paste("SELECT
 ,[MaxProductivitySurveyDate] as [Productivity survey end]
 -- ,[NumberOfProductivitySurveyDays]
 FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
-WHERE [Year] = ",SurveyYear,sep="")
+WHERE [Year] = ",SurveyYear," ORDER BY Year",sep="")
 Summary_SurveyDatesByYearDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
 
 # Build some survey date values to use later in the markdown text
@@ -222,7 +246,7 @@ Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, *Haliaeetu
 
 The Copper River in WRST contains a high density of nesting Bald Eagles *(Haliaeetus leucocephalus)* in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor in Wrangell-St. Elias National Park and Preserve (WRST). Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. Further, Bald Eagles nesting along the Copper River in WRST may face increasing disturbance due to forestry activities and increased human visitation.
 
-Bald eagles (*Haliaeetus leucocephalus*) are common breeders in Wrangell-St Elias National Park and Preserve (WRST). Most nests are concentrated along the Copper River and its major tributaries. Potential threats to nesting eagles include habitat loss, human disturbance, and exposure to environmental contaminants that may affect reproduction or survival. Specific threats include highway construction from Chitina to Cordova, development and timber harvest on private lands along rivers, lakes, and coastal areas, potential increases in commercial and recreational fishing on the Copper River and its tributaries, camping or other recreational or subsistence access/use activities (including use of ATVs and jet boats) in sensitive breeding areas, and environmental contamination from local and global sources. Pollution is of special concern in the wake of the Exxon-Valdez oil spill that occurred near Valdez in March of 1989. The TransAlaska Pipeline crosses three tributaries of the Copper River---the Gulkana, Tazlina, and Klutina rivers. These rivers are also crossed by the Richardson Highway, which is heavily used by tanker trucks carrying petroleum products to and from the Valdez terminal. These are all important reasons to document long-term trends on population density and reproductive rates for bald eagles.
+Bald eagles are common breeders in Wrangell-St Elias National Park and Preserve (WRST). Most nests are concentrated along the Copper River and its major tributaries. Potential threats to nesting eagles include habitat loss, human disturbance, and exposure to environmental contaminants that may affect reproduction or survival. Specific threats include highway construction from Chitina to Cordova, development and timber harvest on private lands along rivers, lakes, and coastal areas, potential increases in commercial and recreational fishing on the Copper River and its tributaries, camping or other recreational or subsistence access/use activities (including use of ATVs and jet boats) in sensitive breeding areas, and environmental contamination from local and global sources. Pollution is of special concern in the wake of the Exxon-Valdez oil spill that occurred near Valdez in March of 1989. The TransAlaska Pipeline crosses three tributaries of the Copper River---the Gulkana, Tazlina, and Klutina rivers. These rivers are also crossed by the Richardson Highway, which is heavily used by tanker trucks carrying petroleum products to and from the Valdez terminal. These are all important reasons to document long-term trends on population density and reproductive rates for bald eagles.
 
 # Objectives
 
@@ -376,8 +400,7 @@ FROM Dataset_Productivity
 WHERE (Year = ",SurveyYear,") 
 AND ([Lat-NAD83] IS NOT NULL) -- Avoid missing spatial coords
 AND ([Lat-NAD83] > 50) -- Avoid Lat/Lon records of 0/0
-AND (StatusCode_P IN ('S', 'IF')) -- Successful or faild, ignore not found and not counted records
-",sep='')
+AND (StatusCode_P IN ('S', 'IF')) -- Successful or faild, ignore not found and not counted records",sep='')
 
 # Get data frame from query
 Dataset_ProductivityDataFrame = GetDataFrameFromDatabase(Sql)
@@ -502,6 +525,7 @@ Table `r TableCounter` shows nest success metrics by river segment for the `r Su
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT  [Year]
 ,[RiverSegment]
+,RiverSegmentCode as [River Segment]
 ,[Nests located]
 ,[Occupied]
 ,[Successful]
@@ -518,7 +542,7 @@ FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
 WHERE Year <= ",SurveyYear," 
 And RiverSegment <> 'Chitina River Tributaries' -- only done once
 And NOT(RiverSegment = 'Chitina' And Year = 1989) -- Only two nests observed, one successful, inflates chitina productivity so omit
-ORDER BY Year DESC",sep="")
+ORDER BY Year DESC,RiverSegmentCode",sep="")
 
 # Get the data from the database into a data frame
 SuccessByYearRiverSegmentDF = GetDataFrameFromDatabase(Sql) 
@@ -634,7 +658,7 @@ FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the C
 ggplot(data=Summary_SuccessByYearDataFrame) +
 
   # % nest success linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`% nest success`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  geom_smooth(mapping = aes(x=Year,y=`% nest success`),linetype="solid",color="black",method = "lm", se = FALSE, na.rm = FALSE,level = .95) +
   
   # % nest success curve
   geom_line(mapping = aes(x=Year,y=`% nest success`,linetype='Percent of occupied nests that were successful')) +
@@ -642,7 +666,7 @@ ggplot(data=Summary_SuccessByYearDataFrame) +
   
   
   # % nest success linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`% nest occupied`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  geom_smooth(mapping = aes(x=Year,y=`% nest occupied`),linetype="solid",color="black",method = "lm", se = FALSE, na.rm = FALSE,level = .95) +
   
   # % nest occupied curve
   geom_line(mapping = aes(x=Year,y=`% nest occupied`,linetype='Percent of nests that were occupied')) +
@@ -715,7 +739,7 @@ FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year
 ggplot(data=Summary_SuccessByYearDataFrame) +
   
   # Young per successful nest linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),linetype="solid",color="black",method = "lm", se = FALSE, na.rm = FALSE,level = .95) +
   
   # Young per successful nest mean horizontal line and label
   #geom_line(mapping = aes(x=Year,y=MeanYoungPerSuccessfulNest),linetype = "solid") +
@@ -726,7 +750,7 @@ ggplot(data=Summary_SuccessByYearDataFrame) +
   #scale_linetype_manual(values = c("Young/successful nest" = "solid")) +
   
   # Young per occupied nest linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`Young/occupied nest`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  geom_smooth(mapping = aes(x=Year,y=`Young/occupied nest`),linetype="solid",color="black",method = "lm", se = FALSE, na.rm = FALSE,level = .95) +
   
   # Young per occupied nest mean horizontal line and label
   #geom_line(mapping = aes(x=Year,y=MeanYoungPerOccupiedNest),linetype = "solid") +
@@ -809,7 +833,7 @@ ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) 
   ylim(0,100) +
   
   
-  geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm",color='black') +
+  geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm",color='black', se = FALSE) +
    # Minimal theme
   theme_minimal() +
   facet_wrap(vars(`RiverSegment`))
@@ -828,7 +852,7 @@ Note: Faber (1989) reported 50% success rate on the Chitina River segment in 198
 # Plot productivity by year by river segment
 ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) +
   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) +
-  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm",color='black') +
+  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm",color='black', se = FALSE) +
   ylim(0,2) +
   
    # Minimal theme
@@ -959,14 +983,14 @@ GetRiverSegmentSuccessPlot = function(Segment){
   plot = ggplot(data=DF) +
 
   # % nest success linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`% nest success`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  geom_smooth(mapping = aes(x=Year,y=`% nest success`),linetype="solid",color="black",method = "lm", se = FALSE, na.rm = FALSE,level = .95) +
   
   # % nest success curve
   geom_line(mapping = aes(x=Year,y=`% nest success`,linetype='Percent of occupied nests that were successful')) +
   scale_linetype_manual(values = c("% nest success" = "solid")) +
   
   # % nest occupancy linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`% nest occupied`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  geom_smooth(mapping = aes(x=Year,y=`% nest occupied`),linetype="solid",color="black",method = "lm", se = FALSE, na.rm = FALSE,level = .95) +
   
   # % nest occupied curve
   geom_line(mapping = aes(x=Year,y=`% nest occupied`,linetype='Percent of nests that were occupied')) +
@@ -1141,7 +1165,7 @@ Putera, J. and S.D. Miller. 2018. Protocol implementation plan for bald eagle mo
 ```{r echo=FALSE, label = "Appendix A: Long-term productivity data"}
 
 # Long term productivity metrics
-kable(SuccessByYearRiverSegmentDF, caption = paste("Table ",TableCounter,". Long term success and productivity metrics by year and river segment in the Copper River bald eagles monitoring study area.",sep=""))
+kable(select(SuccessByYearRiverSegmentDF,-RiverSegment), caption = paste("Table ",TableCounter,". Long term success and productivity metrics by year and river segment in the Copper River bald eagles monitoring study area.",sep=""))
 
 # Increment the table counter
 TableCounter = TableCounter + 1
