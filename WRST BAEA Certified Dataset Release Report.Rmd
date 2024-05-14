@@ -3,7 +3,6 @@ title: "WRST BAEA Certified Data Release Report"
 output: html_document
 ---
 
-
 ```{=html}
 <style>
 h1.title {
@@ -59,6 +58,7 @@ tr {
 
 </style>
 ```
+# Certified Dataset: Long-term Monitoring of Bald Eagle Abundance and Distribution in Wrangell - St. Elias National Park and Preserve
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
@@ -91,16 +91,6 @@ GetLongDate <- function(Date) {
   return(format(as.Date(Date), format="%B %d, %Y "))
 }
 
-```
-
-# Productivity 
-
-Productivity and success was recorded by WRST from 1989-1996 (Kozie, 1996)[https://irma.nps.gov/DataStore/Reference/Profile/2238328]. These metrics are available from the [NPS Data Store](https://irma.nps.gov/DataStore/Reference/Profile/2297286). Field data observations for these years remain unavailable as of the date of this report.
-
-
-
-```{r , echo=FALSE}
-
 # This query gets the survey details from the GSPE_Surveys database table
 Sql = paste("SELECT TOP (1000) [Year]
       ,[MinOccupancySurveyDate] as [Occ. survey start]
@@ -116,83 +106,51 @@ DF = dbGetQuery(Connection,Sql)
 FirstSurveyYear = min(DF$Year)
 LatestSurveyYear = max(DF$Year)
 
-kable(DF)
 ```
 
-Field data observations from `r FirstSurveyYear` to `r LatestSurveyYear` are available in this dataset release.
+# Abstract
 
+The Copper River in WRST contains a high density of nesting Bald Eagles *(Haliaeetus leucocephalus)* in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor in Wrangell-St. Elias National Park and Preserve (WRST). Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. Further, Bald Eagles nesting along the Copper River in WRST may face increasing disturbance due to forestry activities and increased human visitation.The objectives of the monitoring efforts are to 1) document the annual changes in occupancy of bald eagles, 2) document the annual changes in productivity of bald eagle nests, and document any changes in distribution of bald eagle nests. This data release contains Bald Eagle productivity and nest information from `r FirstSurveyYear` to `r LatestSurveyYear`.
+
+# Methods
+
+Methods follow (Putera and Miller (2018))[<https://irma.nps.gov/DataStore/Reference/Profile/2256539>]
+
+## Study Area
+
+Five survey areas were defined along major riverways, and are described in Kozie (1996):
+
+1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (Picea glauca) is the predominant tree species, with balsam poplar (Populus balsamifera) common on the lower stretches. The Middle Copper River (MCR, 179km) extends from the Chistochina River south to the confluence of the Chitina River.
+
+2.) The Middle Copper River (MCR) contains a mixture of both white spruce and balsam poplar, with poplar being slightly more common. The Copper River begins to braid along the MCR.
+
+2.) The Lower Copper River (LCR) section (188km) extends from the Chitina River south to Miles Lake. The LCR is dominated by cottonwood along the river. The vegetation also begins to exhibit coastal influences, adding several coastal species including black cottonwood (Populus trichocarpa), Sitka spruce (Picea sitchensis), and mountain hemlock (Tsuga mertensiana). The Copper River is wide and more braided than the upper sections, with steep canyons on either side. Nesting begins consistently later along the LCR and is probably influenced by the numerous glaciers in the area which delay snow melt and maintain the area in a winter-like state several weeks after green up has begun to occur to the north.
+
+3.) The Bremner River (45km) is surveyed from its confluence with the Copper River to the forks by Threemile Canyon, and has similar characteristics as the LCR.
+
+4.) The Chitina River (116km) is surveyed from the confluence of the Copper River to where the river becomes braided above the Tana River. White spruce dominate the trees, with cottonwood becoming scarce in the upper reaches.
+
+A total of 609 km of riverways are surveyed annually, amounting to over 1200km of surveys.
+
+# Summary of data files
+
+| File                                                         | Description                                                      |
+|--------------------------------------------------------------|------------------------------------------------------------------|
+| WRST BAEA Certified Productivity Dataset Ver. 2024-04-24.csv | Productivity and success data (comma separated values text file) |
+| WRST BAEA Certified Nests Dataset Ver. 2024-04-24.csv        | Nests data (comma separated values text file)                    |
+
+# Columns descriptions
+
+Productivity and success was recorded by WRST from 1989-1996 (Kozie, 1996)[<https://irma.nps.gov/DataStore/Reference/Profile/2238328>]. These metrics are available from the [NPS Data Store](https://irma.nps.gov/DataStore/Reference/Profile/2297286). Field data observations for these years remain unavailable as of the date of this report.
 
 ```{r , echo=FALSE}
-
-# This query gets the survey details from the GSPE_Surveys database table
-Sql = paste("SELECT top 10 [Nest_ID]
-      ,[IsActive]
-      ,[DiscoverDate]
-      ,[FirstSightingDate]
-      ,[LastSightingDate]
-      ,[Duration (years)]
-      ,[RiverSegment]
-      ,[TreeSpecies]
-      ,[Species]
-      ,[TreeIsDead]
-      ,[NumberOfTimesNotFoundInTheLast2Surveys]
-      ,[OccupancyObservations]
-      ,[NestInitiations]
-      ,[ProductivityObservations]
-      ,[NumberOfTimesSuccessful]
-      ,[PctSuccessful]
-      ,[AvgYoungPerSuccessfulNest]
-      ,[EarliestOccupancyRecord]
-      ,[LatestOccupancyRecord]
-      ,[EarliestProductivityRecord]
-      ,[LatestProductivityRecord]
-      ,[YearsUsed]
-      ,[Lat-NAD83]
-      ,[Lon-NAD83]
-      ,[NestSub]
-      ,[TerritoryID]
-      ,[Comments]
-      ,[WKT]
-  FROM [CAKN_BaldEagles].[dbo].[Dataset_Nests]",sep="")
+Sql = "SELECT TOP (1000) [Table]
+      --,[Type]
+      ,[Column]
+      ,[ColumnDescription]
+      --,[TableDescription]
+  FROM [CAKN_BaldEagles].[dbo].[DatabaseColumnsDescriptions]
+  where [Table] in ('SurveyData','Nests') order by [Table],[Column]"
 DF = dbGetQuery(Connection,Sql)
-
-kable(DF)
-```
-
-# Nests 
-```{r , echo=FALSE}
-
-# This query gets the survey details from the GSPE_Surveys database table
-Sql = paste("SELECT top 10 [Nest_ID]
-      ,[IsActive]
-      ,[DiscoverDate]
-      ,[FirstSightingDate]
-      ,[LastSightingDate]
-      ,[Duration (years)]
-      ,[RiverSegment]
-      ,[TreeSpecies]
-      ,[Species]
-      ,[TreeIsDead]
-      ,[NumberOfTimesNotFoundInTheLast2Surveys]
-      ,[OccupancyObservations]
-      ,[NestInitiations]
-      ,[ProductivityObservations]
-      ,[NumberOfTimesSuccessful]
-      ,[PctSuccessful]
-      ,[AvgYoungPerSuccessfulNest]
-      ,[EarliestOccupancyRecord]
-      ,[LatestOccupancyRecord]
-      ,[EarliestProductivityRecord]
-      ,[LatestProductivityRecord]
-      ,[YearsUsed]
-      ,[Lat-NAD83]
-      ,[Lon-NAD83]
-      ,[NestSub]
-      ,[TerritoryID]
-      ,[Comments]
-      ,[WKT]
-  FROM [CAKN_BaldEagles].[dbo].[Dataset_Nests]",sep="")
-DF = dbGetQuery(Connection,Sql)
-
 kable(DF)
 ```
