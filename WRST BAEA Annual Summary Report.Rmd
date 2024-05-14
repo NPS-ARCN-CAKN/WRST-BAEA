@@ -3,66 +3,86 @@ output:
   html_document:
     number_sections: no
     toc: no
-  
 ---
-
 
 ```{=html}
 <style>
-h1.title {
+
+body {
+    font-family: "Times New Roman";
+    font-size: 11.5pt;
+    color: black;
+}
+
+.title {
   font-family: "Times New Roman";
-  font-size: 24px;
+  font-size: 16pt;
   font-weight: bold;
+  color: black;
 }
 
 h1 {
     font-family: "Arial";
-    font-size: 20px;
+    font-size: 16pt;
     font-weight: bold;
+    color: black;
 }
 
 
 h2 {
   font-family: "Arial";
-  font-size: 16px;
+  font-size: 11.5pt;
   font-weight: bold;
+  color: black;
 }
 
 h3 {
   font-family: "Arial";
-  font-size: 14px;
+  font-size: 10.5pt;
   font-weight: bold;
+  color: black;
+}
+
+h4 {
+    font-family: "Times New Roman";
+    font-size: 12pt;
+    color: black;
 }
 
 p {
     font-family: "Times New Roman";
-    font-size: 12px;
+    font-size: 11.5pt;
+    color: black;
 }
 
 .caption {
     font-family: "Arial";
-    font-size: 10px;
+    font-size: 10pt;
+    color: black;
 }
 
-p .caption {
+th {
     font-family: "Arial";
-    font-size: 10px;
+    font-size: 9pt;
+    font-weight: bold;
+    color: black;
 }
 
-tr {
+tr,td,table {
     font-family: "Arial";
-    font-size: 10px;
+    font-size: 9pt;
+    color: black;
 }
 
 .header{
   font-family: "Arial";
-  font-size: 10px;
+  font-size: 10pt;
   font-weight: bold;
+  color: black;
 }
 
 </style>
 ```
-
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
 
@@ -72,7 +92,9 @@ library(knitr)
 library(ggplot2)
 library(sp)
 library(sf)
-
+library(sqldf)
+library(tidyverse)
+library(xfun)
 
 # Make kable show blanks for NAs
 options(knitr.kable.NA = '')
@@ -84,9 +106,9 @@ FigWidth = 6
 ```{r echo=FALSE,label="SET UP REPORT PARAMETERS HERE"}
 
 # Set up report parameters here
-SurveyYear = 2023  # Set this to the desired report year
+SurveyYear = 2023  # Set this to the desired report year. Don't set to 2016 because that survey didn't come off and the script will bomb
 
-# ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
+# ODBC connection to the BAEA monitoring SQL Server Database. 
 # Contact data manager for server and database details.
 # ConnectionString to the bald eagles Sql Server database
 BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna;Database=CAKN_BaldEagles;trusted_connection=YES"
@@ -108,7 +130,7 @@ output:
 ```{r echo=FALSE,label="Functions"}
 
 # Current date
-CurrentDate = Sys.Date() # Get the current date
+CurrentDate = format(Sys.Date(), format='%B %d, %Y') # Get the current date
 
 # Function to return data frames from SQL database queries
 GetDataFrameFromDatabase <- function(Sql) {
@@ -126,11 +148,7 @@ FigureCounter = 1
 
 ```
 
-
 ```{r echo=FALSE, label="Survey dates"}
-
-# Gather data for the report
-
 
 # Summary_SurveyDatesByYearDataFrame: Survey Dates
 Sql = paste("SELECT 
@@ -163,14 +181,22 @@ Sql = paste("SELECT [Year]
 ,[% nest success]
 ,[Young/occupied nest]
 ,[Young/successful nest]
--- ,CASE WHEN Left(Source,3)='Fab' THEN 1 WHEN Left(Source,3)='Koz' THEN 2 WHEN Left(Source,3)='NPS' THEN 3 END as SourceCode
 --,Source
+--,Left(Source,4) as Source
 FROM [Summary_SuccessByYear]
-WHERE Year <= ",SurveyYear,"
+WHERE Year <= ",SurveyYear," 
+AND Year NOT IN (2016) -- 2016 Interrupted by bad weather
 ORDER BY [Year]",sep="")
 
 # Get the data from the database into a data frame
 Summary_SuccessByYearDataFrame = GetDataFrameFromDatabase(Sql) 
+
+# Length of record
+MinYear = min(Summary_SuccessByYearDataFrame$Year, na.rm = TRUE) 
+MaxYear = max(Summary_SuccessByYearDataFrame$Year, na.rm = TRUE)
+LengthOfRecord = MaxYear - MinYear
+FirstSurveyYear = min(Summary_SuccessByYearDataFrame$Year)
+NumberOfSurveys = sqldf('SELECT Count(DISTINCT Year) as NumberOfSurveys FROM Summary_SuccessByYearDataFrame')
 
 # We'll need just this year's data in a separated data frame from all the historical data.
 # Filter on the summary data frame on the current year and then remove the Year column
@@ -192,38 +218,30 @@ ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Pa
 
 
 
+
+
 ```
 
 Kyle Cutting^1^ and Scott Miller^2^
 
-^1^National Park Service Wrangell St. Elias National Park and Preserve Copper Center, Alaska
+^1^National Park Service, Wrangell St. Elias National Park and Preserve, 8 Richardson Hwy Mile 106, Copper Center, AK 99573
 
-^2^Arctic Inventory and Monitoring Network 240 W. 5th Ave Anchorage, Alaska 99501
+^2^National Park Service, Arctic Inventory and Monitoring Network,240 W. 5th Ave Anchorage, Alaska 99501
+
 
 `r CurrentDate`
 
-U.S. Department of the Interior
 
-National Park Service
+U.S. Department of the Interior  
+National Park Service  
+Natural Resource Stewardship and Science  
+Fort Collins, Colorado  
 
-Natural Resource Stewardship and Science
-
-Fort Collins, Colorado
-
-
-
-
-# Executive summary
+# Introduction
 
 `r ExecutiveSummaryText`
 
 Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, *Haliaeetus leucocephalus*, Population dynamics, monitoring, `r SurveyYear`
-
-# Introduction
-
-The Copper River in WRST contains a high density of nesting Bald Eagles *(Haliaeetus leucocephalus)* in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor in Wrangell-St. Elias National Park and Preserve (WRST). Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. Further, Bald Eagles nesting along the Copper River in WRST may face increasing disturbance due to forestry activities and increased human visitation.
-
-Bald eagles (*Haliaeetus leucocephalus*) are common breeders in Wrangell-St Elias National Park and Preserve (WRST). Most nests are concentrated along the Copper River and its major tributaries. Potential threats to nesting eagles include habitat loss, human disturbance, and exposure to environmental contaminants that may affect reproduction or survival. Specific threats include highway construction from Chitina to Cordova, development and timber harvest on private lands along rivers, lakes, and coastal areas, potential increases in commercial and recreational fishing on the Copper River and its tributaries, camping or other recreational or subsistence access/use activities (including use of ATVs and jet boats) in sensitive breeding areas, and environmental contamination from local and global sources. Pollution is of special concern in the wake of the Exxon-Valdez oil spill that occurred near Valdez in March of 1989. The TransAlaska Pipeline crosses three tributaries of the Copper River---the Gulkana, Tazlina, and Klutina rivers. These rivers are also crossed by the Richardson Highway, which is heavily used by tanker trucks carrying petroleum products to and from the Valdez terminal. These are all important reasons to document long-term trends on population density and reproductive rates for bald eagles.
 
 # Objectives
 
@@ -237,9 +255,7 @@ The objectives of the monitoring efforts are to:
 
 # Methods
 
-## Study Area
-
-Five survey areas were defined along major riverways, and are described in Kozie (1996):
+The `r SurveyYear` bald eagle survey followed the same methods (Putera and Miller, 2018) that have been used since `r MinYear`. Five survey areas were defined along the Copper River and its major tributaries (Figure 1):
 
 1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (Picea glauca) is the predominant tree species, with balsam poplar (Populus balsamifera) common on the lower stretches. The Middle Copper River (MCR, 179km) extends from the Chistochina River south to the confluence of the Chitina River.
 
@@ -250,8 +266,6 @@ Five survey areas were defined along major riverways, and are described in Kozie
 3.) The Bremner River (45km) is surveyed from its confluence with the Copper River to the forks by Threemile Canyon, and has similar characteristics as the LCR.
 
 4.) The Chitina River (116km) is surveyed from the confluence of the Copper River to where the river becomes braided above the Tana River. White spruce dominate the trees, with cottonwood becoming scarce in the upper reaches.
-
-A total of 609 km of riverways are surveyed annually, amounting to over 1200km of surveys.
 
 ```{r echo=FALSE,label="Survey area map",fig.alt=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.cap=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.width=FigWidth}
 
@@ -303,11 +317,7 @@ ggplot() +
 
 ```
 
-
-
-## Surveys
-
-Two aerial surveys were conducted---one to document territorial occupancy, and one to document productivity. Surveys were flown using a small airplane flying at low level (\<100m AGL) and low speed (\<100 kph), with one experienced observer. Flight paths followed the river's edge, with the opposite side covered on the return trip. In most cases, the relatively narrow riparian corridor allowed adequate coverage with a single pass on each side of the river. Where the corridor widened, multiple passes were made to adequately evaluate the available habitat.
+Two aerial surveys were conducted in `r SurveyYear` - one to document territorial occupancy, and one to document productivity. Surveys were flown using a small airplane flying at low level (\<100m AGL) and low speed (\<100 kph), with one experienced observer. Flight paths followed the river's edge, with the opposite side covered on the return trip. In most cases, the relatively narrow riparian corridor allowed adequate coverage with a single pass on each side of the river. Where the corridor widened, multiple passes were made to adequately evaluate the available habitat.
 
 For all new nests located, the following information was collected:
 
@@ -332,19 +342,28 @@ During the second survey, all nest locations collected during prior surveys were
 
 ```{r echo=FALSE,label="Get metrics into variables to use in markdown text"}
 
-# Build a paragraph of information about the survey results into a variable. Embed this variable in the markdown text later (the stats could be embedded in the markdown individually, but for some reason it doesn't always work
-#consistently, so I built the paragraph here.)
-ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights. Of these nests, ',Occupied,' were occupied (', PctOccupied,'%). and of occupied nests, ',Successful,' successfully produced young (',PctSuccessful,'%). Occupied nest production averaged ', YngPerOccupiedNest,' young per nest and successful nests produced a mean of ',YngPerSuccessfulNest,' young.',sep='')
+# Build a paragraph of information about the survey results into a variable. Embed this variable in the markdown text later (the stats could be embedded in the markdown individually, but for some reason it doesn't always work consistently, so I built the paragraph here.)
+ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights (Table 1). Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests, ',Successful,' successfully produced young (',PctSuccessful,'%). ', str_to_sentence(numbers_to_words(YoungFledged)),' young were produced overall. Occupied nest production averaged ', YngPerOccupiedNest,' young per nest and successful nests produced a mean of ',YngPerSuccessfulNest,' young.',sep='')
 
 ```
 
-Bald eagle occupancy survey flights were conducted in WRST from `r GetLongDate(OStart)` to `r GetLongDate(OEnd)`. Follow-up productivity flights happened from `r GetLongDate(PStart)` to `r GetLongDate(PEnd)`. `r ResultsText`
+Bald eagle occupancy survey flights were conducted in WRST from `r GetLongDate(OStart)` to `r GetLongDate(OEnd)`. Follow-up productivity flights happened from `r GetLongDate(PStart)` to `r GetLongDate(PEnd)`. `r ResultsText` Table `r TableCounter` shows nest success and productivity metrics by river segment. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter`.
 
 ```{r echo=FALSE, label="Current survey metrics table"}
 # Summarize the eagle counts for the current survey into 
 # a table, transpose it so it fits the report better, modify the header, and output
 
 # Convert it all to strings so R doesn't add decimal places to integers
+Summary_SuccessByYearDataFrame_Current = sqldf(paste("SELECT 
+[Nests located]
+,Occupied
+,Successful
+,[Productivity unknown]
+,[Young fledged]
+,[% nest occupied]
+,[% nest success]
+,[Young/occupied nest] 
+FROM Summary_SuccessByYearDataFrame WHERE Year = ",SurveyYear,sep=''))
 Summary_SuccessByYearDataFrame_Current_char = sapply(Summary_SuccessByYearDataFrame_Current, as.character) 
 
 # Convert it into a data frame
@@ -356,8 +375,12 @@ kable(Summary_SuccessByYearDataFrame_Current_char_DF,col.names=c("Metric","Resul
 
 # Increment the table counter
 TableCounter = TableCounter + 1
+
+# Set up a caption for the next figure
+FigureCaption = paste("Figure ",FigureCounter,". Bald eagle nest dispersion and breeding pair productivity metrics in the Copper River Valley in ",SurveyYear,". Black circles represent successful nests with the size indicating number of young produced. Failed nests are shown with an X. Mean occupancy rate was ",Occupied,"% and mean success rate was ",Successful,"%.",sep='')
 ```
-```{r echo=FALSE, label="Success map",fig.alt=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",Occupied,"% and mean success rate was ",Successful,"%.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",PctOccupied,"% and mean success rate was ",PctSuccessful,"%.",sep=''),fig.width=FigWidth}
+
+```{r echo=FALSE, label="Success map",fig.alt=FigureCaption,fig.cap=FigureCaption,fig.width=FigWidth}
 
 # Get the spatial locations of successful and failed nests for a map
 Sql = paste("SELECT   
@@ -405,11 +428,16 @@ ggplot() +
     # Rivers
   geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +  
   
-  # Productive nests
+  # Failed nests
   # Consider carefully whether to publish nest locations, or not
   geom_point(data=Dataset_ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status,na.rm = TRUE,shape=Status),size=2) +
   scale_color_manual(values = c("Succeeded" = "black", "Failed" = "black")) +
   scale_shape_manual(values = c(4,19)) + # 4 = X, 19 = dot
+  
+  # Productive nests, increasing size with productivity
+  geom_point(data=subset(Dataset_ProductivityDataFrame,Status=="Succeeded"), aes(x = Longitude, y = Latitude, size=factor(NumYng), na.rm = TRUE),color="black") +
+  # Override the size attributes assigned by geom_point. 'values' is size of symbol.
+  scale_size_manual(name="Young produced",values = c(2,5),breaks = c(1,2), labels = c("1","2")) + 
   
   # Set the map limits
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
@@ -442,67 +470,13 @@ National Park and Preserve"), size = 3, color = "black") +
 FigureCounter = FigureCounter + 1
 ```
 
-```{r echo=FALSE,label="Productivity map",fig.alt=paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",YngPerOccupiedNest," young per nest and mean productivity of successful nests was ",YngPerSuccessfulNest," young per nest.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Productivity of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Mean productivity of occupied nests was ",YngPerOccupiedNest," young per nest and mean productivity of successful nests was ",YngPerSuccessfulNest," young per nest.",sep=''),fig.width=FigWidth}
-
-# Productivity map
-ggplot() +
-  
-  # Blue rectangle to make the background of the map blue
-  geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
-  
-  # Alaska outline
-  geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
-  
-  # Park boundary
-  geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
-
-    # Rivers
-  geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +  
-  
-  # Productive nests, increasing size with productivity
-  geom_point(data=subset(Dataset_ProductivityDataFrame,Status=="Succeeded"), aes(x = Longitude, y = Latitude, size=factor(NumYng), na.rm = TRUE),color="black") +
-  
-  # Override the size attributes assigned by geom_point. 'values' is size of symbol.
-  scale_size_manual(name="Young produced",values = c(2,5),breaks = c(1,2), labels = c("1","2")) +    
-  
-  # Set the map limits
-  coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
-  xlab('Longitude') +
-  ylab('Latitude') +
-  
-  # Minimal theme
-  theme_minimal() +
-  
-  # WRST Label
-  geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
-National Park and Preserve"), size = 3, color = "black") +
-  
-    # Upper Copper River label
-  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 3, color = "dodgerblue4") +
-  
-  # Middle Copper River label
-  geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 3, color = "dodgerblue4") +
-  
-  # Lower Copper River label
-  geom_text(aes(x = -145.2, y = 60.8, label = "Lower Copper River"), size = 3, color = "dodgerblue4") +
-  
-  # Chitina River label
-  geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
-  
-  # Bremner River label
-  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
-
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
-```
-
-Table `r TableCounter` shows nest success metrics by river segment for the `r SurveyYear` bald eagle survey in WRST. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter`.
+Bald eagle productivity metrics are presented by river segment in Table `r TableCounter`.
 
 ```{r echo=FALSE,label="Bald eagle productivity and success rates by river segment"}
 
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT  [Year]
-,[RiverSegment]
+,[RiverSegment] as [River segment]
 ,[Nests located]
 ,[Occupied]
 ,[Successful]
@@ -514,12 +488,13 @@ Sql = paste("SELECT  [Year]
 ,[Young/occupied nest]
 ,[Young/successful nest]
 ,[Occupied nests not found during productivity survey)]
-,[Occupied nests not counted during productivity survey)]
+,[Occupied nests not counted during productivity survey)],Source
+,Notes
 FROM [CAKN_BaldEagles].[dbo].[Summary_SuccessByYearAndRiverSegment]
 WHERE Year <= ",SurveyYear," 
 And RiverSegment <> 'Chitina River Tributaries' -- only done once
 And NOT(RiverSegment = 'Chitina' And Year = 1989) -- Only two nests observed, one successful, inflates chitina productivity so omit
-ORDER BY Year DESC",sep="")
+ORDER BY Year",sep="")
 
 # Get the data from the database into a data frame
 SuccessByYearRiverSegmentDF = GetDataFrameFromDatabase(Sql) 
@@ -541,16 +516,11 @@ kable(CurrentSuccessByYearRiverSegmentDF_str_t, caption = paste("Table ",TableCo
 TableCounter = TableCounter + 1
 ```
 
-# Long term trends
+## Long term trends
 
 ```{r echo=FALSE,label="Build long term success and productivity metrics over the entire surveying history to use in the markdown"}
 
 # Build long term success and productivity metrics over the entire surveying history to use in the markdown
-
-# Length of record
-MinYear = min(Summary_SuccessByYearDataFrame$Year, na.rm = TRUE) 
-MaxYear = max(Summary_SuccessByYearDataFrame$Year, na.rm = TRUE)
-LengthOfRecord = MaxYear - MinYear
 
 # Occupancy rate %
 MeanOccupancy = signif(round(mean(Summary_SuccessByYearDataFrame$`% nest occupied`, na.rm = TRUE),1),2)
@@ -571,11 +541,13 @@ MinYoungPerSuccessfulNest = signif(min(Summary_SuccessByYearDataFrame$`Young/suc
 MaxYoungPerSuccessfulNest = signif(max(Summary_SuccessByYearDataFrame$`Young/successful nest`, na.rm = TRUE),3)
 
 # Build a long term results summary paragraph to use in the markdown below
-ResultsText = paste("Over the ",LengthOfRecord," year history of the bald eagles monitoring effort in the Copper River study area, mean nest occupancy has ranged from ", MinOccupancy,"% to ", MaxOccupancy,"%, averaging ",MeanOccupancy,"%. Success rates, defined as occupied nests producing young, has ranged from ",MinSuccess,"% to ",MaxSuccess,"%, averaging ",MeanSuccess,"%. Productivity averaged ",MeanYoungPerSuccessfulNest," young per successful nest, ranging between ",MinYoungPerSuccessfulNest," to ", MaxYoungPerSuccessfulNest,".",sep='')
+ResultsText = paste("Over the ",LengthOfRecord," year history of the bald eagles monitoring effort in the Copper River study area, there have been ",NumberOfSurveys," surveys (Table ",TableCounter,", Figures 2 and 3). During this time, mean nest occupancy has ranged from ", MinOccupancy,"% to ", MaxOccupancy,"%, averaging ",MeanOccupancy,"%. Success rates, defined as occupied nests producing young, has ranged from ",MinSuccess,"% to ",MaxSuccess,"%, averaging ",MeanSuccess,"%. Productivity averaged ",MeanYoungPerSuccessfulNest," young per successful nest, ranging between ",MinYoungPerSuccessfulNest," to ", MaxYoungPerSuccessfulNest,".",sep='')
 
 ```
 
 `r ResultsText`
+
+The 2016 survey was not finished due to bad weather and has been omitted from the results presented below.
 
 ```{r echo=FALSE,label="Long-term bald eagle productivity metrics, Copper River Valley"}
 
@@ -589,71 +561,71 @@ TableCounter = TableCounter + 1
 
 ## Success
 
+Long-term bald eagle nest success and productivity metrics at WRST are shown in Figures 2 and 3. Results for the years 1989 through 1996 are from Kozie (1996).
+
 ```{r echo = FALSE,label="Success rates plot prep"}
 # This chunk generates a figure caption and alt text for the plot in the next R chunk. It has to be here in its own R chunk because it has to be ready to assign to the fig.alt and fig.cap attributes in the header of the next R chunk.
 
 # Generate a linear model of success rate by year
-lm = lm(formula = `% nest success` ~ Year, data = Summary_SuccessByYearDataFrame)
-
-# Summarize the linear model
-Summary = summary(lm)
-
-# Extract linear model parameters from the Summary object. 
-R2 = signif(Summary$adj.r.squared, 3)
-AdjR2 = signif(Summary$adj.r.squared, 3)
-P = signif(Summary$coef[2,4],5)
-Intercept = signif(lm$coef[[1]],5 )
-Slope = signif(lm$coef[[2]],5)
-
-# Make a linear model text summary to put in the figure caption for the plot of success by year
-lmStats_Success = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
-
-# Generate a linear model of occupancy rate by year
-lm = lm(formula = `% nest occupied` ~ Year, data = Summary_SuccessByYearDataFrame)
-
-# Summarize the linear model
-Summary = summary(lm)
-
-# Extract linear model parameters from the Summary object. 
-R2 = signif(Summary$adj.r.squared, 3)
-AdjR2 = signif(Summary$adj.r.squared, 3)
-P = signif(Summary$coef[2,4],5)
-Intercept = signif(lm$coef[[1]],5 )
-Slope = signif(lm$coef[[2]],5)
-
-# Make a linear model text summary to put in the figure caption for the plot of success by year
-lmStats_Occupancy = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
+# lm = lm(formula = `% nest success` ~ Year, data = Summary_SuccessByYearDataFrame)
+# 
+# # Summarize the linear model
+# Summary = summary(lm)
+# 
+# # Extract linear model parameters from the Summary object. 
+# R2 = signif(Summary$adj.r.squared, 3)
+# AdjR2 = signif(Summary$adj.r.squared, 3)
+# P = signif(Summary$coef[2,4],5)
+# Intercept = signif(lm$coef[[1]],5 )
+# Slope = signif(lm$coef[[2]],5)
+# 
+# # Make a linear model text summary to put in the figure caption for the plot of success by year
+# lmStats_Success = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
+# 
+# # Generate a linear model of occupancy rate by year
+# lm = lm(formula = `% nest occupied` ~ Year, data = Summary_SuccessByYearDataFrame)
+# 
+# # Summarize the linear model
+# Summary = summary(lm)
+# 
+# # Extract linear model parameters from the Summary object. 
+# R2 = signif(Summary$adj.r.squared, 3)
+# AdjR2 = signif(Summary$adj.r.squared, 3)
+# P = signif(Summary$coef[2,4],5)
+# Intercept = signif(lm$coef[[1]],5 )
+# Slope = signif(lm$coef[[2]],5)
+# 
+# # Make a linear model text summary to put in the figure caption for the plot of success by year
+# lmStats_Occupancy = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
 
 # Make a figure caption and alt text for the plot generated in the next R chunk
-FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the Copper River study area. Dotted line shows mean nest occupancy rate (mean = ",MeanOccupancy,"%, ",lmStats_Occupancy,"). Dashed line shows mean success rate for all occupied nests (mean = ",MeanSuccess,"%, ",lmStats_Success,"). Occupancy data is not available prior to 2004. Full success and productivity metrics data are in the Appendix).",sep='')
+# FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the Copper River study area. Dotted line shows mean nest occupancy rate (mean = ",MeanOccupancy,"%, ",lmStats_Occupancy,"). Dashed line shows mean success rate for all occupied nests (mean = ",MeanSuccess,"%, ",lmStats_Success,"). Occupancy data is not available prior to 2004. Full success and productivity metrics data are in the Appendix).",sep='')
+
+# Set up the figure caption for the next figure
+FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the Copper River study area. Solid line shows mean nest occupancy rate (mean = ",MeanOccupancy,"%). Dashed line shows mean success rate for all occupied nests (mean = ",MeanSuccess,"%). Results for the years 1989 through 1996 are from Kozie (1996).",sep='')
 
 ```
 
 ```{r echo=FALSE,label="Percent nest success by year",fig.alt=FigureCaption,fig.cap=FigureCaption,fig.width=FigWidth}
 
 # Plot historical occupancy and success rates for the whole watershed
-ggplot(data=Summary_SuccessByYearDataFrame) +
+ggplot() +
 
-  # % nest success linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`% nest success`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
-  
   # % nest success curve
-  geom_line(mapping = aes(x=Year,y=`% nest success`,linetype='Percent of occupied nests that were successful')) +
-  scale_linetype_manual(values = c("% nest success" = "solid")) +
-  
-  
-  # % nest success linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`% nest occupied`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
-  
-  # % nest occupied curve
-  geom_line(mapping = aes(x=Year,y=`% nest occupied`,linetype='Percent of nests that were occupied')) +
+  # Kozie's data
+  geom_line(data=subset(Summary_SuccessByYearDataFrame,Year <= 1997),mapping = aes(x=Year,y=`% nest success`,linetype="Percent success")) +
+  # I&M data
+  geom_line(data=subset(Summary_SuccessByYearDataFrame,Year > 1997),mapping = aes(x=Year,y=`% nest success`,linetype="Percent success")) +
+
+  # % nest occupied curve (there is no Kozie, pre-2004 data for this)
+  geom_line(data=subset(Summary_SuccessByYearDataFrame,Year > 1997),mapping = aes(x=Year,y=`% nest occupied`,linetype="Percent occupancy")) +
 
   # Fix the legend, define the line types
-  scale_linetype_manual(name="",values = c("Percent of nests that were occupied" = "dotted","Percent of occupied nests that were successful" = "dashed"),) +
+  scale_linetype_manual(name="",values = c("Percent success" = "solid","Percent occupancy" = "dotted"),) +
   
   # Label axes
   xlab("Year") +
-  ylab("Success rate") +
+  ylab("Occupancy and success rates") +
   
   # Y limits
   ylim(0,100) +
@@ -662,7 +634,6 @@ ggplot(data=Summary_SuccessByYearDataFrame) +
   theme_minimal() +
   theme(legend.position = "top") 
   
-
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 
@@ -674,40 +645,42 @@ FigureCounter = FigureCounter + 1
 # This chunk generates a figure caption and alt text for the plot in the next R chunk. It has to be here in its own R chunk because it has to be ready to assign to the fig.alt and fig.cap attributes in the header of the next R chunk.
 
 # Generate a linear model of success rate by year
-lm = lm(formula = `Young/successful nest` ~ Year, data = Summary_SuccessByYearDataFrame)
-
-# Summarize the linear model
-Summary = summary(lm)
-
-# Extract linear model parameters from the Summary object. 
-R2 = signif(Summary$adj.r.squared, 3)
-AdjR2 = signif(Summary$adj.r.squared, 3)
-P = signif(Summary$coef[2,4],5)
-Intercept = signif(lm$coef[[1]],5 )
-Slope = signif(lm$coef[[2]],5)
-
-# Make a linear model text summary to put in the figure caption for the plot of success by year
-lmStats_ProductivitySuccessful = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
-
-# Generate a linear model of occupancy rate by year
-lm = lm(formula = `Young/occupied nest` ~ Year, data = Summary_SuccessByYearDataFrame)
-
-# Summarize the linear model
-Summary = summary(lm)
-
-# Extract linear model parameters from the Summary object. 
-R2 = signif(Summary$adj.r.squared, 3)
-AdjR2 = signif(Summary$adj.r.squared, 3)
-P = signif(Summary$coef[2,4],5)
-Intercept = signif(lm$coef[[1]],5 )
-Slope = signif(lm$coef[[2]],5)
-
-# Make a linear model text summary to put in the figure caption for the plot of success by year
-lmStats_ProductivityOccupied = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
+# lm = lm(formula = `Young/successful nest` ~ Year, data = Summary_SuccessByYearDataFrame)
+# 
+# # Summarize the linear model
+# Summary = summary(lm)
+# 
+# # Extract linear model parameters from the Summary object. 
+# R2 = signif(Summary$adj.r.squared, 3)
+# AdjR2 = signif(Summary$adj.r.squared, 3)
+# P = signif(Summary$coef[2,4],5)
+# Intercept = signif(lm$coef[[1]],5 )
+# Slope = signif(lm$coef[[2]],5)
+# 
+# # Make a linear model text summary to put in the figure caption for the plot of success by year
+# lmStats_ProductivitySuccessful = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
+# 
+# # Generate a linear model of occupancy rate by year
+# lm = lm(formula = `Young/occupied nest` ~ Year, data = Summary_SuccessByYearDataFrame)
+# 
+# # Summarize the linear model
+# Summary = summary(lm)
+# 
+# # Extract linear model parameters from the Summary object. 
+# R2 = signif(Summary$adj.r.squared, 3)
+# AdjR2 = signif(Summary$adj.r.squared, 3)
+# P = signif(Summary$coef[2,4],5)
+# Intercept = signif(lm$coef[[1]],5 )
+# Slope = signif(lm$coef[[2]],5)
+# 
+# # Make a linear model text summary to put in the figure caption for the plot of success by year
+# lmStats_ProductivityOccupied = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
 
 # Make a figure caption and alt text for the plot generated in the next R chunk
-FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year over the Copper River study area. Dashed line shows mean productivity for successful nests (occupied and productive) (mean = ",MeanYoungPerSuccessfulNest," young per nest, ",lmStats_ProductivitySuccessful,"). Dotted line shows mean productivity for all occupied nests (mean = ",MeanYoungPerOccupiedNest," young per nest, ",lmStats_ProductivityOccupied,"). Full success and productivity metrics data are in the Appendix).",sep='')
+# FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year over the Copper River study area. Dashed line shows mean productivity for successful nests (occupied and productive) (mean = ",MeanYoungPerSuccessfulNest," young per nest, ",lmStats_ProductivitySuccessful,"). Dotted line shows mean productivity for all occupied nests (mean = ",MeanYoungPerOccupiedNest," young per nest, ",lmStats_ProductivityOccupied,"). Full success and productivity metrics data are in the Appendix).",sep='')
 
+# Set up the figure caption for the next figure
+FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year over the Copper River study area. Dashed line shows mean productivity for successful nests (occupied and productive) (mean = ",MeanYoungPerSuccessfulNest," young per nest). Dotted line shows mean productivity for all occupied nests (mean = ",MeanYoungPerOccupiedNest,"). Results for the years 1989 through 1996 are from Kozie (1996).",sep='')
 ```
 
 ```{r echo=FALSE,label="Productivity by year plot",fig.alt=FigureCaption,fig.cap=FigureCaption,fig.width=FigWidth}
@@ -715,38 +688,26 @@ FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year
 # Plot productivity
 ggplot(data=Summary_SuccessByYearDataFrame) +
   
-  # Young per successful nest linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  # Kozie's 1989-1996 data
+  geom_line(data=subset(Summary_SuccessByYearDataFrame,Year <= 1997),mapping = aes(x=Year,y=`Young/successful nest`,linetype="Young/successful nest")) +
   
-  # Young per successful nest mean horizontal line and label
-  #geom_line(mapping = aes(x=Year,y=MeanYoungPerSuccessfulNest),linetype = "solid") +
-  #geom_text(mapping = aes(x=2000,y=MeanYoungPerSuccessfulNest * 0.9),label=paste("Mean young/successful nest = ",MeanYoungPerSuccessfulNest,sep=""),linetype="solid") +
-
-  # Young per successful nest curve
-  geom_line(mapping = aes(x=Year,y=`Young/successful nest`,linetype='Young/successful nest')) +
-  #scale_linetype_manual(values = c("Young/successful nest" = "solid")) +
+  # I&M data
+  geom_line(data=subset(Summary_SuccessByYearDataFrame,Year > 1997),mapping = aes(x=Year,y=`Young/successful nest`,linetype="Young/successful nest")) +
   
-  # Young per occupied nest linear regression model with 95% SE shaded area
-  geom_smooth(mapping = aes(x=Year,y=`Young/occupied nest`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) +
+  # Kozie's 1989-1996 data
+  geom_line(data=subset(Summary_SuccessByYearDataFrame,Year <= 1997),mapping = aes(x=Year,y=`Young/occupied nest`,linetype="Young/occupied nest")) +
   
-  # Young per occupied nest mean horizontal line and label
-  #geom_line(mapping = aes(x=Year,y=MeanYoungPerOccupiedNest),linetype = "solid") +
-  #geom_text(mapping = aes(x=2000,y=MeanYoungPerOccupiedNest * 0.9),label=paste("Mean young/occupied nest = ",MeanYoungPerOccupiedNest,sep=""),linetype="dashed") +
-
-  # Young per occupied nest curve
-  geom_line(mapping = aes(x=Year,y=`Young/occupied nest`,linetype='Young/occupied nest')) +
+  #I&M data
+  geom_line(data=subset(Summary_SuccessByYearDataFrame,Year > 1997),mapping = aes(x=Year,y=`Young/occupied nest`,linetype="Young/occupied nest")) +
 
   # Fix the legend, define the line types
-  scale_linetype_manual(name="",values = c("Young/occupied nest" = "dotted","Young/successful nest" = "dashed"),) +
+  scale_linetype_manual(name="",values = c("Young/occupied nest" = "dotted","Young/successful nest" = "solid"),) +
   
   # Label axes
   xlab("Year") +
   ylab("Young per nest") +
   
-  # Y limits
-  #ylim(1,2) +
-  
-   # Minimal theme
+  # Minimal theme
   theme_minimal() +
   theme(legend.position = "top")
 
@@ -755,417 +716,157 @@ FigureCounter = FigureCounter + 1
 
 ```
 
+```{r , echo=FALSE,fig.height=10}
+# Success by river segment plot
+# ggplot(df) +
+#   geom_line(aes(x=Year,y=`% nest success`,linetype=Source),na.rm=TRUE) +
+#   geom_smooth(aes(x=Year,y=`% nest success`,color=Source),se=FALSE,show.legend=TRUE,color='black',method = 'lm',na.rm=TRUE) +
+#   #geom_text(aes(x=Year,y=`% nest success`,colour = factor(Source),label=Label),check_overlap = TRUE,na.rm=TRUE) +
+#   facet_grid(rows='RiverSegment') +
+#   theme_minimal() 
+  
 
+```
 
-<!-- ## Long term trends by river segment -->
+# Discussion
 
-<!-- Bald eagle monitoring has been done from `r MinYear` through `r MaxYear` (Appendix A).  -->
+[To be written]
 
+# References
 
-<!-- ### Table of long term metrics by river segment -->
+Kozie K. 1996. [Bald Eagle Productivity for Wrangell-St Elias National Park and Preserve 1993-1996](https://irma.nps.gov/DataStore/Reference/Profile/2238328). National Park Service, Wrangell - St. Elias National Park. Unpublished Report. Copper Center, Alaska
 
-<!-- ```{r echo = FALSE,label="Get results by river segment"} -->
+Postupalsky, S. 1974. Raptor reproductive success: some problems with methods, criteria, and terminology, IN Raptor Research Report No. 2, Raptor Research Foundation, Vermilion, South Dakota, pp 21-31.
 
-<!-- # Get long term results by river segment into a data frame -->
-<!-- Summary_SuccessByRiverSegmentDataFrame = GetDataFrameFromDatabase("SELECT  -->
-<!-- RiverSegment -->
-<!-- , Earliest -->
-<!-- , Latest -->
-<!-- , NumberOfSurveys as n -->
-<!-- , NestsLocated as [Nests located] -->
-<!-- , Occupied  -->
-<!-- , Successful -->
-<!-- , ProductivityUnknown [Productivity unknown] -->
-<!-- , YoungProduced as [Total young produced] -->
-<!-- , MeanYoungProduced as [Mean young produced] -->
-<!-- , MeanYoungPerOccupiedNest as [Mean young per occupied nest] -->
-<!-- , MeanYoungPerSuccessfulNest as  [Mean young per successful nest] -->
-<!-- , MeanPctOccupied as [Mean occupancy rate (%)] -->
-<!-- , MeanPctSuccess as [Mean success rate (%)] -->
-<!-- FROM Summary_SuccessByRiverSegment -->
-<!-- ORDER BY RiverSegment") -->
 
-<!-- # Show the metrics for the river segment -->
-<!-- t = t(Summary_SuccessByRiverSegmentDataFrame) -->
-<!-- colnames(t) = c('','','','','') -->
+Putera, J. and S.D. Miller. 2018. [Protocol implementation plan for bald eagle monitoring in Wrangell-St. Elias National Park & Preserve, Central Alaska Network: Version 1.0](https://irma.nps.gov/DataStore/Reference/Profile/2256539). Natural Resource Report. NPS/CAKN/NRR—2018/1752. National Park Service. Fort Collins, Colorado.
 
+```{r echo=FALSE,include=FALSE}
+# This chunk copies the report to the J or O drive
+CurrentDirectory = "C:/Development/WRST BAEA Reports R Markdown/"
+From = paste(CurrentDirectory,"WRST-BAEA-Annual-Summary-Report.html",sep='')
+To = paste(CurrentDirectory,SurveyYear," WRST BAEA Survey Summary.html",sep='') # ARCN
 
-<!-- # Make a caption for the table of long term metrics by river segment -->
-<!-- TableCaption = paste("Table ",TableCounter,". Long term bald eagle nesting success and productivity metrics by river segment.",sep="") -->
+# Copy the file to the Network reports directory
+file.copy(From, To, overwrite = TRUE)
 
-<!-- kable(t,caption=TableCaption) -->
+```
 
-<!-- # Increment the table counter -->
-<!-- TableCounter = TableCounter + 1 -->
 
-<!-- ``` -->
 
-<!-- ### Long term nest success by river segment -->
 
-<!-- ```{r echo=FALSE,label="Percent nest success by year by river segment",fig.alt=paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Nest success by year and river segment from , ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.width=FigWidth} -->
 
-<!-- # plot % nest success faceted by river segment -->
-<!-- ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) + -->
-<!--   geom_line(mapping = aes(x=Year,y=`% nest success`),color='black') + -->
-<!--   ylim(0,100) + -->
 
+--------------------------------------------------------------------------------------
 
-<!--   geom_smooth(mapping = aes(x=Year,y=`% nest success`),method = "lm",color='black') + -->
-<!--    # Minimal theme -->
-<!--   theme_minimal() + -->
-<!--   facet_wrap(vars(`RiverSegment`)) -->
+# Quality Control Checks (Not to be published)
 
-<!-- # Increment the figure counter -->
-<!-- FigureCounter = FigureCounter + 1 -->
+## Survey Attributes from the Surveys Database Table
 
-<!-- ``` -->
+### Survey details
 
-<!-- Note: Faber (1989) reported 50% success rate on the Chitina River segment in 1989, but only two nests were observed in total. This result is omitted in the figure above. -->
+```{r echo=FALSE}
 
-<!-- ### Long term productivity by river segment -->
+df = GetDataFrameFromDatabase(paste("SELECT Year, Abstract, DataDirectory, ReportIRMACode, ReportURL, DataProcessingNotes, DatasetIRMAReferenceCode, DataQualityNotes
+FROM Surveys
+WHERE Year = ",SurveyYear,sep=''))
+Abstract = df$Abstract
+DataProcessingNotes = df$DataProcessingNotes
+DataQualityNotes = df$DataQualityNotes
 
-<!-- ```{r echo=FALSE,label="Productivity by year by river segment",fig.alt=paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.cap=paste("Figure ",FigureCounter,". Young per successful nest by year and river segment, ",MinYear," - ",MaxYear," (full success and productivity metrics table is in Appendix).",sep=''),fig.width=FigWidth} -->
+df2 = sqldf('SELECT DataDirectory, ReportIRMACode, ReportURL, DatasetIRMAReferenceCode FROM df')
+kable(t(df2))
+```
 
-<!-- # Plot productivity by year by river segment -->
-<!-- ggplot(data=subset(SuccessByYearRiverSegmentDF,RiverSegment != "Copper River")) + -->
-<!--   geom_line(mapping = aes(x=Year,y=`Young/successful nest`)) + -->
-<!--   geom_smooth(mapping = aes(x=Year,y=`Young/successful nest`),method = "lm",color='black') + -->
-<!--   ylim(0,2) + -->
 
-<!--    # Minimal theme -->
-<!--   theme_minimal() + -->
-<!--   facet_wrap(vars(`RiverSegment`)) -->
 
-<!-- # Increment the figure counter -->
-<!-- FigureCounter = FigureCounter + 1 -->
-<!-- ``` -->
+### Abstract
+`r Abstract`
 
-<!-- ```{r echo = FALSE} -->
-<!-- # Function to do linear models on nest success and occupancy and return the results as text suitable for  -->
-<!-- # a plot of the river segment's success over time -->
-<!-- GetRiverSegmentSuccessPlotCaption = function(Segment, FigureNumber){ -->
+### DataProcessingNotes
+`r DataProcessingNotes`
 
-<!--   # Isolate data for just the river segment specified by Segment -->
-<!--   RiverSegmentDF = subset(SuccessByYearRiverSegmentDF,`RiverSegment` == Segment) -->
+### DataQualityNotes
+`r DataQualityNotes`
 
-<!--   # Rates -->
-<!--   MetricsDF = subset(Summary_SuccessByRiverSegmentDataFrame,RiverSegment == Segment) -->
-<!--   MeanOccupancy = MetricsDF$`Mean occupancy rate (%)` -->
-<!--   MeanSuccess = MetricsDF$`Mean success rate (%)` -->
-<!--   n = MetricsDF$n -->
+## List of comments
 
-<!--   # Generate a linear model of success rate by year -->
-<!--   lm = lm(formula = `Young/successful nest` ~ Year, data = RiverSegmentDF) -->
+Comments can be useful in troubleshooting strange results
 
-<!--   # Summarize the linear model -->
-<!--   Summary = summary(lm) -->
+```{r echo=FALSE}
 
-<!--   # Extract linear model parameters from the Summary object.  -->
-<!--   R2 = signif(Summary$adj.r.squared, 3) -->
-<!--   AdjR2 = signif(Summary$adj.r.squared, 3) -->
-<!--   P = signif(Summary$coef[2,4],5) -->
-<!--   Intercept = signif(lm$coef[[1]],5 ) -->
-<!--   Slope = signif(lm$coef[[2]],5) -->
+df = GetDataFrameFromDatabase("SELECT Nest_ID,Comments_O as Comment,'Occupancy' as Survey  FROM SurveyData WHERE Year = 2023 And (NOT (Comments_O IS NULL))
+UNION
+SELECT Nest_ID,Comments_P,'Productivity' FROM SurveyData WHERE Year = 2023 And (NOT (Comments_P IS NULL))
+ORDER BY Nest_ID")
 
-<!--     # Make a linear model text summary to put in the figure caption for the plot of success by year -->
-<!--   lmStats_Success = paste("Mean success rate was ",MeanSuccess,"% (n = ",n,", Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P,")") -->
+kable(df)
 
-<!--   # Generate a linear model of occupancy rate by year -->
-<!--   lm = lm(formula = `Young/occupied nest` ~ Year, data = RiverSegmentDF) -->
+```
 
-<!--   # Summarize the linear model -->
-<!--   Summary = summary(lm) -->
+`r nrow(df)` rows
 
-<!--   # Extract linear model parameters from the Summary object.  -->
-<!--   R2 = signif(Summary$adj.r.squared, 3) -->
-<!--   AdjR2 = signif(Summary$adj.r.squared, 3) -->
-<!--   P = signif(Summary$coef[2,4],5) -->
-<!--   Intercept = signif(lm$coef[[1]],5 ) -->
-<!--   Slope = signif(lm$coef[[2]],5) -->
+## Active nests with DateDiscoveredGone is not NULL
 
-<!--   # Make a linear model text summary to put in the figure caption for the plot of success by year -->
-<!--   lmStats_Occupancy = paste("Mean occupancy was ",MeanOccupancy,"% (n = ",n,", Adj R2 = ",AdjR2,", Intercept = ",Intercept, ", Slope =",Slope, ", P =",P,")") -->
+All active nests should have DateDiscoveredGone attributes NULL
 
-<!--   # Make a figure caption and alt text for the plot generated in the next R chunk -->
-<!--   FigureCaption = paste("Figure ",FigureNumber,". Nest occupancy and success rates on the ",Segment," river segment. ",lmStats_Occupancy,". ",lmStats_Success,".  Full success and productivity metrics data are in the Appendix).",sep='') -->
+```{r echo=FALSE}
 
-<!--   # Return the figure caption -->
-<!--   return(FigureCaption) -->
-<!-- } -->
-<!-- ``` -->
+df = GetDataFrameFromDatabase(paste("SELECT Nest_ID, Date_O, Nest_O, Date_P, StatusCode_P, Comments_O, Comments_P, IsActive, DateDiscoveredGone
+FROM QC_ActiveNestsWithDateDiscoveredGoneIsNotNULL
+WHERE Year(Date_O) = ",SurveyYear,sep=''))
+kable(df)
+```
 
-<!-- ```{r echo = FALSE} -->
-<!-- # Function to do linear models on nest productivity and return the results as text suitable for  -->
-<!-- # a plot of the river segment's success over time -->
-<!-- GetRiverSegmentProductivityPlotCaption = function(Segment, FigureNumber){ -->
+`r nrow(df)` rows
 
-<!--     # Isolate data for just the river segment specified by Segment -->
-<!--   RiverSegmentDF = subset(SuccessByYearRiverSegmentDF,`RiverSegment` == Segment) -->
+## Nests With No Productivity Observation
 
-<!--   # Rates -->
-<!--   MetricsDF = subset(Summary_SuccessByRiverSegmentDataFrame,RiverSegment == Segment) -->
-<!--   #MeanOccupancy = MetricsDF$`Mean occupancy rate (%)` -->
-<!--   #MeanSuccess = MetricsDF$`Mean success rate (%)` -->
-<!--   n = MetricsDF$n -->
+Occasionally observers are unable to re-survey nests for the productivity portion of the survey due to bad weather, smoke, logistical, or other problems. These records should have their StatusCode_P attribute set to 'NS' (Not surveyed). The table below shows records with StatusCode_P = 'NS'
 
-<!--   # Generate a linear model of success rate by year -->
-<!--   lm = lm(formula = `Young/successful nest` ~ Year, data = RiverSegmentDF) -->
+```{r echo=FALSE}
 
-<!--   # Summarize the linear model -->
-<!--   Summary = summary(lm) -->
+df = GetDataFrameFromDatabase(paste("SELECT Nest_ID, RiverSegment, Date_O, OccupancyStatus, ProductivityStatus,Comments_O,Comments_p
+FROM QC_NestsNotProductivitySurveyed
+WHERE (NOT (Date_O IS NULL)) AND (Date_P IS NULL)
+And Year(Date_O)=",SurveyYear," and StatusCode_P='NS'
+ORDER BY Date_O,Nest_ID",sep=''))
+kable(df)
 
-<!--   # Extract linear model parameters from the Summary object.  -->
-<!--   R2 = signif(Summary$adj.r.squared, 3) -->
-<!--   AdjR2 = signif(Summary$adj.r.squared, 3) -->
-<!--   P = signif(Summary$coef[2,4],5) -->
-<!--   Intercept = signif(lm$coef[[1]],5 ) -->
-<!--   Slope = signif(lm$coef[[2]],5) -->
+```
 
-<!--     # Make a linear model text summary to put in the figure caption for the plot of success by year -->
-<!--   lmStats_Success = paste("Mean success rate was ",MeanSuccess,"% (n = ",n,", Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P,")") -->
+`r nrow(df)` rows
 
-<!--   # Generate a linear model of occupancy rate by year -->
-<!--   lm = lm(formula = `Young/occupied nest` ~ Year, data = RiverSegmentDF) -->
+## Successful Nests With No Recorded Young
 
-<!--   # Summarize the linear model -->
-<!--   Summary = summary(lm) -->
+The definition of nest success is observed young during the productivity survey. The following records, if any, should be checked.
 
-<!--   # Extract linear model parameters from the Summary object.  -->
-<!--   R2 = signif(Summary$adj.r.squared, 3) -->
-<!--   AdjR2 = signif(Summary$adj.r.squared, 3) -->
-<!--   P = signif(Summary$coef[2,4],5) -->
-<!--   Intercept = signif(lm$coef[[1]],5 ) -->
-<!--   Slope = signif(lm$coef[[2]],5) -->
+```{r echo=FALSE}
 
-<!--   # Make a linear model text summary to put in the figure caption for the plot of success by year -->
-<!--   lmStats_Occupancy = paste("Mean occupancy was ",MeanOccupancy,"% (n = ",n,", Adj R2 = ",AdjR2,", Intercept = ",Intercept, ", Slope =",Slope, ", P =",P,")") -->
+df = GetDataFrameFromDatabase(paste("SELECT [Year]
+      ,[Nest_ID]
+      ,[NumYng]
+      ,[StatusCode_P]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung]
+  WHERE Year = ",SurveyYear,sep=''))
+kable(df)
 
-<!--   # Make a figure caption and alt text for the plot generated in the next R chunk -->
-<!--   FigureCaption = paste("Figure ",FigureNumber,". Nest occupancy and success rates on the ",Segment," river segment. ",lmStats_Occupancy,". ",lmStats_Success,".  Full success and productivity metrics data are in the Appendix).",sep='') -->
+```
 
+`r nrow(df)` rows
 
-<!--   # Return the figure caption -->
-<!--   return(FigureCaption) -->
-<!-- } -->
-<!-- ``` -->
+## Chick Age Recorded But No Young Recorded
 
-<!-- ```{r echo = FALSE} -->
-<!-- # Returns a nest occupancy and success plot for a river segment -->
-<!-- GetRiverSegmentSuccessPlot = function(Segment){ -->
+The following records, if any, have a Chick_Age attribute that is not NULL, but NumYng attribute is NULL or zero. This means a chick stage was recorded, but no chicks were observed.
 
-<!--   # Filter the summary data by the river segment -->
-<!--   DF = subset(SuccessByYearRiverSegmentDF,RiverSegment == Segment) -->
+```{r echo=FALSE}
 
-<!--   # Plot % nest success faceted by river segment -->
-<!--   plot = ggplot(data=DF) + -->
+df = GetDataFrameFromDatabase(paste("SELECT * FROM QC_ChickAgeButNoYoung WHERE Year = ",SurveyYear,sep=''))
+kable(df)
 
-<!--   # % nest success linear regression model with 95% SE shaded area -->
-<!--   geom_smooth(mapping = aes(x=Year,y=`% nest success`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) + -->
+```
 
-<!--   # % nest success curve -->
-<!--   geom_line(mapping = aes(x=Year,y=`% nest success`,linetype='Percent of occupied nests that were successful')) + -->
-<!--   scale_linetype_manual(values = c("% nest success" = "solid")) + -->
+`r nrow(df)` rows
 
-<!--   # % nest occupancy linear regression model with 95% SE shaded area -->
-<!--   geom_smooth(mapping = aes(x=Year,y=`% nest occupied`),linetype="solid",color="black",method = "lm", se = TRUE, na.rm = FALSE,level = .95) + -->
 
-<!--   # % nest occupied curve -->
-<!--   geom_line(mapping = aes(x=Year,y=`% nest occupied`,linetype='Percent of nests that were occupied')) + -->
-
-<!--   # Fix the legend, define the line types -->
-<!--   scale_linetype_manual(name="",values = c("Percent of nests that were occupied" = "dotted","Percent of occupied nests that were successful" = "dashed"),) + -->
-
-<!--   # Label axes -->
-<!--   xlab("Year") + -->
-<!--   ylab(paste("Success rate, ",Segment,sep='')) + -->
-
-<!--   # Y limits -->
-<!--   ylim(0,100) + -->
-
-<!--    # Minimal theme -->
-<!--   theme_minimal() + -->
-<!--   theme(legend.position = "top")  -->
-
-<!--   return(plot) -->
-<!-- } -->
-<!-- ``` -->
-
-<!-- ```{r echo = FALSE} -->
-
-<!-- # Show long term metrics for the river segment specified by RiverSegment -->
-<!-- GetSummaryByRiverSegment = function(Segment){ -->
-
-<!--   # Filter the Summary_SuccessByRiverSegmentDataFrame frame on RiverSegment -->
-<!--   Summary_SuccessByRiverSegmentDataFrame2 = subset(Summary_SuccessByRiverSegmentDataFrame,RiverSegment == Segment) -->
-
-<!--   # Truncate long decimal places to one decimal -->
-<!--   Summary_SuccessByRiverSegmentDataFrame2 =  data.frame(lapply(Summary_SuccessByRiverSegmentDataFrame2,  function(x) if(is.numeric(x)) round(x, 1) else x)) -->
-
-<!--   # Knock off the RiverSegment column since it's already filtered on RiverSegment. -->
-<!--   Summary_SuccessByRiverSegmentDataFrame2$RiverSegment = NULL  -->
-
-<!--   # Convert it all to strings so R doesn't add decimal places to integers -->
-<!--   Summary_SuccessByRiverSegmentDataFrame2 = sapply(Summary_SuccessByRiverSegmentDataFrame2, as.character)  -->
-
-<!--   # Convert the above back into into a data frame -->
-<!--   Summary_SuccessByRiverSegmentDataFrame2 = as.data.frame(Summary_SuccessByRiverSegmentDataFrame2) -->
-
-<!--   # Blank out the uninformative first column -->
-<!--   colnames(Summary_SuccessByRiverSegmentDataFrame2) = '' -->
-
-<!--   return(Summary_SuccessByRiverSegmentDataFrame2) -->
-<!-- } -->
-
-
-<!-- ``` -->
-
-<!-- ### Lower Copper -->
-
-<!-- ```{r echo=FALSE} -->
-<!-- # Present metrics by river segment  -->
-<!-- Segment = "Lower Copper" # Specify the river segment to isolate -->
-
-<!-- # Generate a figure caption for the plot that will be generated in the next R chunk -->
-<!-- FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter) -->
-
-<!-- ``` -->
-
-<!-- ```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth} -->
-
-<!-- # Generate a plot of success for the river segment specified by Segment -->
-<!-- GetRiverSegmentSuccessPlot(Segment) -->
-
-<!-- # Increment the figure counter -->
-<!-- FigureCounter = FigureCounter + 1 -->
-
-<!-- ``` -->
-
-
-<!-- ### Bremner -->
-
-<!-- ```{r echo=FALSE} -->
-<!-- # Present metrics by river segment  -->
-<!-- Segment = "Bremner" # Specify the river segment to isolate -->
-
-<!-- # Generate a figure caption for the plot that will be generated in the next R chunk -->
-<!-- FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter) -->
-
-<!-- ``` -->
-
-<!-- ```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth} -->
-
-<!-- # Generate a plot of success for the river segment specified by Segment -->
-<!-- GetRiverSegmentSuccessPlot(Segment) -->
-
-<!-- # Increment the figure counter -->
-<!-- FigureCounter = FigureCounter + 1 -->
-
-<!-- ``` -->
-
-<!-- ### Chitina -->
-
-<!-- ```{r echo=FALSE} -->
-<!-- # Present metrics by river segment  -->
-<!-- Segment = "Chitina" # Specify the river segment to isolate -->
-
-<!-- # Generate a figure caption for the plot that will be generated in the next R chunk -->
-<!-- FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter) -->
-
-<!-- ``` -->
-
-<!-- ```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth} -->
-
-<!-- # Generate a plot of success for the river segment specified by Segment -->
-<!-- GetRiverSegmentSuccessPlot(Segment) -->
-
-<!-- # Increment the figure counter -->
-<!-- FigureCounter = FigureCounter + 1 -->
-
-<!-- ``` -->
-
-
-<!-- ### Middle Copper -->
-
-<!-- ```{r echo=FALSE} -->
-<!-- # Present metrics by river segment  -->
-<!-- Segment = "Middle Copper" # Specify the river segment to isolate -->
-
-<!-- # Generate a figure caption for the plot that will be generated in the next R chunk -->
-<!-- FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter) -->
-
-<!-- ``` -->
-
-<!-- ```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth} -->
-
-<!-- # Generate a plot of success for the river segment specified by Segment -->
-<!-- GetRiverSegmentSuccessPlot(Segment) -->
-
-<!-- # Increment the figure counter -->
-<!-- FigureCounter = FigureCounter + 1 -->
-
-<!-- ``` -->
-
-
-<!-- ### Upper Copper -->
-
-<!-- ```{r echo=FALSE} -->
-<!-- # Present metrics by river segment  -->
-<!-- Segment = "Upper Copper" # Specify the river segment to isolate -->
-
-<!-- # Generate a figure caption for the plot that will be generated in the next R chunk -->
-<!-- FigureCaption = GetRiverSegmentSuccessPlotCaption(Segment, FigureCounter) -->
-
-<!-- ``` -->
-
-<!-- ```{r echo=FALSE,fig.alt=FigureCaption,fig.cap=FigureCaption, fig.width=FigWidth} -->
-
-<!-- # Generate a plot of success for the river segment specified by Segment -->
-<!-- GetRiverSegmentSuccessPlot(Segment) -->
-
-<!-- # Increment the figure counter -->
-<!-- FigureCounter = FigureCounter + 1 -->
-
-<!-- ``` -->
-
-
-<!-- # Discussion -->
-
-<!-- # Literature cited -->
-
-<!-- Kozie, K. 1996. Bald Eagle Productivity for Wrangell-St Elias National Park and Preserve 1993-1996. Unpublished Report. National Park Service Wrangell St. Elias National Park. Copper Center, Alaska -->
-
-<!-- Putera, J. and S.D. Miller. 2018. Protocol implementation plan for bald eagle monitoring in Wrangell-St. Elias National Park & Preserve, Central Alaska Network: Version 1.0. Natural Resource Report. NPS/CAKN/NRR—2018/1752. National Park Service. Fort Collins, Colorado -->
-
-
-<!-- ## Appendix: Long-term productivity data -->
-
-<!-- ```{r echo=FALSE, label = "Appendix A: Long-term productivity data"} -->
-
-<!-- # Long term productivity metrics -->
-<!-- kable(SuccessByYearRiverSegmentDF, caption = paste("Table ",TableCounter,". Long term success and productivity metrics by year and river segment in the Copper River bald eagles monitoring study area.",sep="")) -->
-
-<!-- # Increment the table counter -->
-<!-- TableCounter = TableCounter + 1 -->
-<!-- ``` -->
-
-<!-- Results prior to 2004 from Kozie (1996). Results including and after 2004 are from WRST and the NPS Central Alaska Inventory and Monitoring Program (Putera and Miller, 2018). -->
-
-<!-- # Extended information about the survey -->
-
-<!-- Information in this appendix is not intended for inclusion in the report; it's included to provide context to the survey for the authors to use or discard, as needed. -->
-
-<!-- ## Survey dates summary -->
-
-<!-- ```{r echo=FALSE, label = "Survey dates summary"} -->
-
-<!-- # Transpose the survey dates data frame -->
-<!-- Summary_SurveyDatesByYearDataFrame_t = t(Summary_SurveyDatesByYearDataFrame) -->
-
-<!-- # Change the goofy column header -->
-<!-- colnames(Summary_SurveyDatesByYearDataFrame_t) = 'Date' -->
-
-<!-- # Output the survey dates table -->
-<!-- kable(Summary_SurveyDatesByYearDataFrame_t) -->
-
-<!-- ``` -->
 
