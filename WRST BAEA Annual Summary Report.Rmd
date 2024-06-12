@@ -239,7 +239,7 @@ Fort Collins, Colorado
 
 `r ExecutiveSummaryText`
 
-Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, *Haliaeetus leucocephalus*, Population dynamics, monitoring
+**Keywords:** Wrangell-St. Elias National Park and Preserve, Bald Eagle, *Haliaeetus leucocephalus*, Population dynamics, monitoring
 
 # Objectives
 
@@ -296,7 +296,7 @@ ggplot() +
   theme_minimal() +
   
   # WRST text Label
-  geom_text(aes(x = -144.25, y = 61.8, label = "Wrangell - St. Elias National\nPark and Preserve"), size = 4, color = "dodgerblue4") +
+  geom_text(aes(x = -144.25, y = 61.8, label = "Wrangell - St. Elias National\nPark and Preserve"), size = 4, color = "gray40", fontface = "bold") +
   
   # Upper Copper River label
   geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 4, color = "black") +
@@ -448,7 +448,7 @@ ggplot() +
   
   # WRST Label
   geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
-National Park and Preserve"), size = 3, color = "black") +
+National Park and Preserve"), size = 3, color = "gray40") +
   
     # Upper Copper River label
   geom_text(aes(x = -144, y = 62.45, label = "Upper Copper\nRiver"), size = 3, color = "dodgerblue4") +
@@ -546,8 +546,6 @@ ResultsText = paste("Over the ",LengthOfRecord," year history of the bald eagles
 
 `r ResultsText`
 
-The 2016 survey was not finished due to bad weather and has been omitted from the results presented below.
-
 ```{r echo=FALSE,label="Long-term bald eagle productivity metrics, Copper River Valley"}
 
 # Show the long-term success and productivity metrics in a table
@@ -557,6 +555,8 @@ kable(Summary_SuccessByYearDataFrame, caption = paste("Table ",TableCounter,". L
 TableCounter = TableCounter + 1
 
 ```
+
+Notes: The 2016 survey was not finished due to bad weather and has been omitted from the results table. The 2009 productivity survey was hampered by smoke leading to a higher than average number of nests with unknown productivity.
 
 ## Success
 
