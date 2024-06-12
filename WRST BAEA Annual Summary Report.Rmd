@@ -235,7 +235,7 @@ National Park Service\
 Natural Resource Stewardship and Science\
 Fort Collins, Colorado
 
-# Introduction
+# Abstract
 
 `r ExecutiveSummaryText`
 
