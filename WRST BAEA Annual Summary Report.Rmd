@@ -83,9 +83,12 @@ tr,td,table {
 
 </style>
 ```
+
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
 
+options(download.file.method = "wininet")
+#install.packages("sqldf")
 # Load libraries
 library(RODBC)
 library(knitr)
@@ -94,7 +97,7 @@ library(sp)
 library(sf)
 library(sqldf)
 library(tidyverse)
-library(xfun)
+
 
 # Make kable show blanks for NAs
 options(knitr.kable.NA = '')
@@ -139,7 +142,7 @@ GetDataFrameFromDatabase <- function(Sql) {
 
 # Function to convert a date string to a long date
 GetLongDate <- function(Date) {
-  return(format(as.Date(Date), format="%B %d, %Y "))
+  return(format(as.Date(Date), format="%B %d, %Y"))
 }
 
 # These counters are used to number the tables and figures. Each gets incremented after use.
@@ -213,11 +216,9 @@ YngPerOccupiedNest = signif(Summary_SuccessByYearDataFrame_Current$`Young/occupi
 YngPerSuccessfulNest = signif(Summary_SuccessByYearDataFrame_Current$`Young/successful nest`,3)
 PctOccupied = signif(Summary_SuccessByYearDataFrame_Current$`% nest occupied`,2)
 PctSuccessful = signif(Summary_SuccessByYearDataFrame_Current$`% nest success`,2)
+ProductivityUnknown = Summary_SuccessByYearDataFrame_Current$`Productivity unknown`
 
-ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, contains a high density of nesting Bald Eagles <i>(Haliaeetus leucocephalus)</i> and the National Park Service has identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In ",SurveyYear," we conducted an aerial bald eagle productivity survey in and around the park. Nest occupancy surveys were flown from ",GetLongDate(OStart)," to ",GetLongDate(OEnd),", followed by productivity surveys from ",GetLongDate(PStart)," to ",GetLongDate(PEnd),". We observed ",NestsLocated," nests, of which ",Occupied," were occupied (",PctOccupied,"%). Productivity surveys revealed that ",Successful," occupied nests producing young (",PctSuccessful,"% of occupied nests). Successful nests resulted in ",YoungFledged," young, an average of ",YngPerSuccessfulNest," young per successful nest.",sep="")
-
-
-
+ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, contains a high density of nesting Bald Eagles <i>(Haliaeetus leucocephalus)</i> and the National Park Service has identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In ",SurveyYear," we conducted an aerial bald eagle productivity survey in and around the park. Nest occupancy surveys were flown from ",GetLongDate(OStart)," to ",GetLongDate(OEnd),", followed by productivity surveys from ",GetLongDate(PStart)," to ",GetLongDate(PEnd),". We observed ",NestsLocated," nests, of which ",Occupied," were occupied (",PctOccupied,"%). Productivity surveys revealed that ",Successful," occupied nests produced young (",PctSuccessful,"% of occupied nests. Productivity could not be determined for ",ProductivityUnknown," nests). Successful nests resulted in ",YoungFledged," young, an average of ",YngPerSuccessfulNest," young per successful nest.",sep="")
 
 
 ```
@@ -241,7 +242,7 @@ Fort Collins, Colorado
 
 `r ExecutiveSummaryText`
 
-Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, *Haliaeetus leucocephalus*, Population dynamics, monitoring, `r SurveyYear`
+Key Words: Wrangell-St. Elias National Park and Preserve, Bald Eagle, *Haliaeetus leucocephalus*, Population dynamics, monitoring
 
 # Objectives
 
@@ -257,15 +258,15 @@ The objectives of the monitoring efforts are to:
 
 The `r SurveyYear` bald eagle survey followed the same methods (Putera and Miller, 2018) that have been used since `r MinYear`. Five survey areas were defined along the Copper River and its major tributaries (Figure 1):
 
-1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (Picea glauca) is the predominant tree species, with balsam poplar (Populus balsamifera) common on the lower stretches. The Middle Copper River (MCR, 179km) extends from the Chistochina River south to the confluence of the Chitina River.
+1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (Picea glauca) is the predominant tree species, with balsam poplar (Populus balsamifera) common on the lower stretches. 
 
-2.) The Middle Copper River (MCR) contains a mixture of both white spruce and balsam poplar, with poplar being slightly more common. The Copper River begins to braid along the MCR.
+2.) The Middle Copper River (MCR, 179km) extends from the Chistochina River south to the confluence of the Chitina River.The MCR contains a mixture of both white spruce and balsam poplar, with poplar being slightly more common. The Copper River begins to braid along the MCR.
 
-2.) The Lower Copper River (LCR) section (188km) extends from the Chitina River south to Miles Lake. The LCR is dominated by cottonwood along the river. The vegetation also begins to exhibit coastal influences, adding several coastal species including black cottonwood (Populus trichocarpa), Sitka spruce (Picea sitchensis), and mountain hemlock (Tsuga mertensiana). The Copper River is wide and more braided than the upper sections, with steep canyons on either side. Nesting begins consistently later along the LCR and is probably influenced by the numerous glaciers in the area which delay snow melt and maintain the area in a winter-like state several weeks after green up has begun to occur to the north.
+3.) The Lower Copper River (LCR) section (188km) extends from the Chitina River south to Miles Lake. The LCR is dominated by cottonwood along the river. The vegetation also begins to exhibit coastal influences, adding several coastal species including black cottonwood (Populus trichocarpa), Sitka spruce (Picea sitchensis), and mountain hemlock (Tsuga mertensiana). The Copper River is wide and more braided than the upper sections, with steep canyons on either side. Nesting begins consistently later along the LCR and is probably influenced by the numerous glaciers in the area which delay snow melt and maintain the area in a winter-like state several weeks after green up has begun to occur to the north.
 
-3.) The Bremner River (45km) is surveyed from its confluence with the Copper River to the forks by Threemile Canyon, and has similar characteristics as the LCR.
+4.) The Bremner River (45km) is surveyed from its confluence with the Copper River to the forks by Threemile Canyon, and has similar characteristics as the LCR.
 
-4.) The Chitina River (116km) is surveyed from the confluence of the Copper River to where the river becomes braided above the Tana River. White spruce dominate the trees, with cottonwood becoming scarce in the upper reaches.
+5.) The Chitina River (116km) is surveyed from the confluence of the Copper River to where the river becomes braided above the Tana River. White spruce dominate the trees, with cottonwood becoming scarce in the upper reaches.
 
 ```{r echo=FALSE,label="Survey area map",fig.alt=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.cap=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.width=FigWidth}
 
@@ -298,22 +299,22 @@ ggplot() +
   theme_minimal() +
   
   # WRST text Label
-  geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias National Park and Preserve"), size = 3, color = "black") +
+  geom_text(aes(x = -144.25, y = 61.8, label = "Wrangell - St. Elias National\nPark and Preserve"), size = 4, color = "dodgerblue4") +
   
   # Upper Copper River label
-  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 3, color = "dodgerblue4") +
+  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 4, color = "black") +
   
   # Middle Copper River label
-  geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 3, color = "dodgerblue4") +
+  geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 4, color = "black") +
   
   # Lower Copper River label
-  geom_text(aes(x = -145.2, y = 60.8, label = "Lower Copper River"), size = 3, color = "dodgerblue4") +
+  geom_text(aes(x = -145.2, y = 60.8, label = "Lower Copper River"), size = 4, color = "black") +
   
   # Chitina River label
-  geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
+  geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 4, color = "black") +
   
   # Bremner River label
-  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
+  geom_text(aes(x = -143.8, y = 60.95, label = "Bremner River"), size = 4, color = "black")
 
 ```
 
@@ -343,7 +344,7 @@ During the second survey, all nest locations collected during prior surveys were
 ```{r echo=FALSE,label="Get metrics into variables to use in markdown text"}
 
 # Build a paragraph of information about the survey results into a variable. Embed this variable in the markdown text later (the stats could be embedded in the markdown individually, but for some reason it doesn't always work consistently, so I built the paragraph here.)
-ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights (Table 1). Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests, ',Successful,' successfully produced young (',PctSuccessful,'%). ', str_to_sentence(numbers_to_words(YoungFledged)),' young were produced overall. Occupied nest production averaged ', YngPerOccupiedNest,' young per nest and successful nests produced a mean of ',YngPerSuccessfulNest,' young.',sep='')
+ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights (Table 1). Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests, ',Successful,' successfully produced young (',PctSuccessful,'%). ', str_to_sentence(xfun::numbers_to_words(YoungFledged)),' young were produced overall. Occupied nest production averaged ', YngPerOccupiedNest,' young per nest and successful nests produced a mean of ',YngPerSuccessfulNest,' young.',sep='')
 
 ```
 
@@ -452,7 +453,7 @@ ggplot() +
 National Park and Preserve"), size = 3, color = "black") +
   
     # Upper Copper River label
-  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 3, color = "dodgerblue4") +
+  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper\nRiver"), size = 3, color = "dodgerblue4") +
   
   # Middle Copper River label
   geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 3, color = "dodgerblue4") +
@@ -464,7 +465,7 @@ National Park and Preserve"), size = 3, color = "black") +
   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
   
   # Bremner River label
-  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
+  geom_text(aes(x = -143.8, y = 60.95, label = "Bremner River"), size = 3, color = "dodgerblue4")
 
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
@@ -561,7 +562,7 @@ TableCounter = TableCounter + 1
 
 ## Success
 
-Long-term bald eagle nest success and productivity metrics at WRST are shown in Figures 2 and 3. Results for the years 1989 through 1996 are from Kozie (1996).
+Long-term bald eagle nest success metrics at WRST are shown in Figure `r FigureCounter`. Results for the years 1989 through 1996 are from Kozie (1996). Results from 2004 to present are from NPS Inventory and Monitoring survey data.
 
 ```{r echo = FALSE,label="Success rates plot prep"}
 # This chunk generates a figure caption and alt text for the plot in the next R chunk. It has to be here in its own R chunk because it has to be ready to assign to the fig.alt and fig.cap attributes in the header of the next R chunk.
@@ -598,11 +599,8 @@ Long-term bald eagle nest success and productivity metrics at WRST are shown in 
 # # Make a linear model text summary to put in the figure caption for the plot of success by year
 # lmStats_Occupancy = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
 
-# Make a figure caption and alt text for the plot generated in the next R chunk
-# FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the Copper River study area. Dotted line shows mean nest occupancy rate (mean = ",MeanOccupancy,"%, ",lmStats_Occupancy,"). Dashed line shows mean success rate for all occupied nests (mean = ",MeanSuccess,"%, ",lmStats_Success,"). Occupancy data is not available prior to 2004. Full success and productivity metrics data are in the Appendix).",sep='')
-
 # Set up the figure caption for the next figure
-FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the Copper River study area. Solid line shows mean nest occupancy rate (mean = ",MeanOccupancy,"%). Dashed line shows mean success rate for all occupied nests (mean = ",MeanSuccess,"%). Results for the years 1989 through 1996 are from Kozie (1996).",sep='')
+FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the Copper River study area. Solid line shows mean nest occupancy rate (mean = ",MeanOccupancy,"%) with solid black smoothing line applied over it. Dotted line shows mean success rate for all occupied nests (mean = ",MeanSuccess,"%) with solid gray smoothing line applied over it.",sep='')
 
 ```
 
@@ -611,6 +609,10 @@ FigureCaption = paste("Figure ",FigureCounter,". Nest success by year over the C
 # Plot historical occupancy and success rates for the whole watershed
 ggplot() +
 
+  # Smooth lines
+  geom_smooth(data=Summary_SuccessByYearDataFrame,aes(x=Year,y=`% nest success`),se=FALSE,color='black',size=0.5,method='loess') +
+  geom_smooth(data=Summary_SuccessByYearDataFrame,aes(x=Year,y=`% nest occupied`),se=FALSE,color='gray',size=0.5,method='loess') +
+  
   # % nest success curve
   # Kozie's data
   geom_line(data=subset(Summary_SuccessByYearDataFrame,Year <= 1997),mapping = aes(x=Year,y=`% nest success`,linetype="Percent success")) +
@@ -640,6 +642,8 @@ FigureCounter = FigureCounter + 1
 ```
 
 ## Productivity
+
+Long-term bald eagle nest productivity metrics at WRST are shown in Figure `r FigureCounter`. Results for the years 1989 through 1996 are from Kozie (1996). Results from 2004 to present are from NPS Inventory and Monitoring survey data.
 
 ```{r echo = FALSE,label="Productivity plot prep"}
 # This chunk generates a figure caption and alt text for the plot in the next R chunk. It has to be here in its own R chunk because it has to be ready to assign to the fig.alt and fig.cap attributes in the header of the next R chunk.
@@ -676,17 +680,18 @@ FigureCounter = FigureCounter + 1
 # # Make a linear model text summary to put in the figure caption for the plot of success by year
 # lmStats_ProductivityOccupied = paste("Adj R2 = ",AdjR2,"Intercept = ",Intercept, " Slope =",Slope, " P =",P)
 
-# Make a figure caption and alt text for the plot generated in the next R chunk
-# FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year over the Copper River study area. Dashed line shows mean productivity for successful nests (occupied and productive) (mean = ",MeanYoungPerSuccessfulNest," young per nest, ",lmStats_ProductivitySuccessful,"). Dotted line shows mean productivity for all occupied nests (mean = ",MeanYoungPerOccupiedNest," young per nest, ",lmStats_ProductivityOccupied,"). Full success and productivity metrics data are in the Appendix).",sep='')
-
 # Set up the figure caption for the next figure
-FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year over the Copper River study area. Dashed line shows mean productivity for successful nests (occupied and productive) (mean = ",MeanYoungPerSuccessfulNest," young per nest). Dotted line shows mean productivity for all occupied nests (mean = ",MeanYoungPerOccupiedNest,"). Results for the years 1989 through 1996 are from Kozie (1996).",sep='')
+FigureCaption = paste("Figure ",FigureCounter,". Bald eagle productivity by year over the Copper River study area. Solid black line shows mean productivity for successful nests (occupied and productive) with a solid black smoothing line applied over it. Mean long term productivity for successful nests is ",MeanYoungPerSuccessfulNest," young per nest). Dotted line shows mean productivity for all occupied nests (mean = ",MeanYoungPerOccupiedNest,") with a solid gray smoothing line applied over it.",sep='')
 ```
 
 ```{r echo=FALSE,label="Productivity by year plot",fig.alt=FigureCaption,fig.cap=FigureCaption,fig.width=FigWidth}
 
 # Plot productivity
 ggplot(data=Summary_SuccessByYearDataFrame) +
+  
+  # Smooth lines
+  geom_smooth(data=Summary_SuccessByYearDataFrame,aes(x=Year,y=`Young/successful nest`),se=FALSE,color='black',size=0.5,method='loess') +
+  geom_smooth(data=Summary_SuccessByYearDataFrame,aes(x=Year,y=`Young/occupied nest`),se=FALSE,color='gray',size=0.5,method='loess') +
   
   # Kozie's 1989-1996 data
   geom_line(data=subset(Summary_SuccessByYearDataFrame,Year <= 1997),mapping = aes(x=Year,y=`Young/successful nest`,linetype="Young/successful nest")) +
@@ -776,9 +781,8 @@ DataQualityNotes = df$DataQualityNotes
 
 df2 = sqldf('SELECT DataDirectory, ReportIRMACode, ReportURL, DatasetIRMAReferenceCode FROM df')
 kable(t(df2))
+
 ```
-
-
 
 ### Abstract
 `r Abstract`
