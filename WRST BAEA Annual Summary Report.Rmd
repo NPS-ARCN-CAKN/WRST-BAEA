@@ -83,7 +83,6 @@ tr,td,table {
 
 </style>
 ```
-
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
 
@@ -229,14 +228,12 @@ Kyle Cutting^1^ and Scott Miller^2^
 
 ^2^National Park Service, Arctic Inventory and Monitoring Network,240 W. 5th Ave Anchorage, Alaska 99501
 
-
 `r CurrentDate`
 
-
-U.S. Department of the Interior  
-National Park Service  
-Natural Resource Stewardship and Science  
-Fort Collins, Colorado  
+U.S. Department of the Interior\
+National Park Service\
+Natural Resource Stewardship and Science\
+Fort Collins, Colorado
 
 # Introduction
 
@@ -258,11 +255,11 @@ The objectives of the monitoring efforts are to:
 
 The `r SurveyYear` bald eagle survey followed the same methods (Putera and Miller, 2018) that have been used since `r MinYear`. Five survey areas were defined along the Copper River and its major tributaries (Figure 1):
 
-1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (Picea glauca) is the predominant tree species, with balsam poplar (Populus balsamifera) common on the lower stretches. 
+1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (*Picea glauca*) is the predominant tree species, with balsam poplar (*Populus balsamifera*) common on the lower stretches.
 
 2.) The Middle Copper River (MCR, 179km) extends from the Chistochina River south to the confluence of the Chitina River.The MCR contains a mixture of both white spruce and balsam poplar, with poplar being slightly more common. The Copper River begins to braid along the MCR.
 
-3.) The Lower Copper River (LCR) section (188km) extends from the Chitina River south to Miles Lake. The LCR is dominated by cottonwood along the river. The vegetation also begins to exhibit coastal influences, adding several coastal species including black cottonwood (Populus trichocarpa), Sitka spruce (Picea sitchensis), and mountain hemlock (Tsuga mertensiana). The Copper River is wide and more braided than the upper sections, with steep canyons on either side. Nesting begins consistently later along the LCR and is probably influenced by the numerous glaciers in the area which delay snow melt and maintain the area in a winter-like state several weeks after green up has begun to occur to the north.
+3.) The Lower Copper River (LCR) section (188km) extends from the Chitina River south to Miles Lake. The LCR is dominated by cottonwood along the river. The vegetation also begins to exhibit coastal influences, adding several coastal species including black cottonwood (*Populus trichocarpa*), Sitka spruce (*Picea sitchensis*), and mountain hemlock (*Tsuga mertensiana*). The Copper River is wide and more braided than the upper sections, with steep canyons on either side. Nesting begins consistently later along the LCR and is probably influenced by the numerous glaciers in the area which delay snow melt and maintain the area in a winter-like state several weeks after green up has begun to occur to the north.
 
 4.) The Bremner River (45km) is surveyed from its confluence with the Copper River to the forks by Threemile Canyon, and has similar characteristics as the LCR.
 
@@ -337,14 +334,14 @@ a)  Count of adult birds,
 b)  Behavior of adults, and
 c)  Number of eggs or nestlings observed.
 
-During the second survey, all nest locations collected during prior surveys were checked for productivity. Territorial occupancy was defined based on a bird in the nest in incubating posture or two adult birds at a nest or in the nest tree (Postupalsky 1974). For the productivity survey, all nests observed with an incubating bird or two adult birds at a nest during the occupancy survey were checked to determine nest outcome. Multiple passes were commonly needed to count chicks, particularly in the Lower Copper area where cottonwoods are more common, and leaves make counting chicks difficult.
+During the second survey, all nest locations collected during prior surveys were checked for productivity. Territorial occupancy was defined based on a bird in the nest in incubating posture or two adult birds at a nest or in the nest tree (Postupalsky, 1974). For the productivity survey, all nests observed with an incubating bird or two adult birds at a nest during the occupancy survey were checked to determine nest outcome. Multiple passes were commonly needed to count chicks, particularly in the Lower Copper area where cottonwoods are more common, and leaves make counting chicks difficult.
 
 # Results
 
 ```{r echo=FALSE,label="Get metrics into variables to use in markdown text"}
 
 # Build a paragraph of information about the survey results into a variable. Embed this variable in the markdown text later (the stats could be embedded in the markdown individually, but for some reason it doesn't always work consistently, so I built the paragraph here.)
-ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights (Table 1). Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests, ',Successful,' successfully produced young (',PctSuccessful,'%). ', str_to_sentence(xfun::numbers_to_words(YoungFledged)),' young were produced overall. Occupied nest production averaged ', YngPerOccupiedNest,' young per nest and successful nests produced a mean of ',YngPerSuccessfulNest,' young.',sep='')
+ResultsText = paste('Overall, ',NestsLocated, ' nests were located during the occupancy survey flights (Table 1). Of these nests, ',Occupied,' were occupied (', PctOccupied,'%) and of occupied nests, ',Successful,' successfully produced young (',PctSuccessful,'%, productivity could not be determined for ',ProductivityUnknown,' nests). ', str_to_sentence(xfun::numbers_to_words(YoungFledged)),' young were produced overall. Occupied nest production averaged ', YngPerOccupiedNest,' young per nest and successful nests produced a mean of ',YngPerSuccessfulNest,' young.',sep='')
 
 ```
 
@@ -364,6 +361,7 @@ Summary_SuccessByYearDataFrame_Current = sqldf(paste("SELECT
 ,[% nest occupied]
 ,[% nest success]
 ,[Young/occupied nest] 
+,[Young/successful nest] 
 FROM Summary_SuccessByYearDataFrame WHERE Year = ",SurveyYear,sep=''))
 Summary_SuccessByYearDataFrame_Current_char = sapply(Summary_SuccessByYearDataFrame_Current, as.character) 
 
@@ -378,7 +376,7 @@ kable(Summary_SuccessByYearDataFrame_Current_char_DF,col.names=c("Metric","Resul
 TableCounter = TableCounter + 1
 
 # Set up a caption for the next figure
-FigureCaption = paste("Figure ",FigureCounter,". Bald eagle nest dispersion and breeding pair productivity metrics in the Copper River Valley in ",SurveyYear,". Black circles represent successful nests with the size indicating number of young produced. Failed nests are shown with an X. Mean occupancy rate was ",Occupied,"% and mean success rate was ",Successful,"%.",sep='')
+FigureCaption = paste("Figure ",FigureCounter,". Bald eagle nest dispersion and breeding pair productivity metrics in the Copper River Valley in ",SurveyYear,". Black circles represent successful nests with the size indicating number of young produced. Failed nests are shown with an X. Mean occupancy rate was ",PctOccupied,"% and mean success rate was ",PctSuccessful,"%.",sep='')
 ```
 
 ```{r echo=FALSE, label="Success map",fig.alt=FigureCaption,fig.cap=FigureCaption,fig.width=FigWidth}
@@ -743,7 +741,6 @@ Kozie K. 1996. [Bald Eagle Productivity for Wrangell-St Elias National Park and 
 
 Postupalsky, S. 1974. Raptor reproductive success: some problems with methods, criteria, and terminology, IN Raptor Research Report No. 2, Raptor Research Foundation, Vermilion, South Dakota, pp 21-31.
 
-
 Putera, J. and S.D. Miller. 2018. [Protocol implementation plan for bald eagle monitoring in Wrangell-St. Elias National Park & Preserve, Central Alaska Network: Version 1.0](https://irma.nps.gov/DataStore/Reference/Profile/2256539). Natural Resource Report. NPS/CAKN/NRR—2018/1752. National Park Service. Fort Collins, Colorado.
 
 ```{r echo=FALSE,include=FALSE}
@@ -757,14 +754,13 @@ file.copy(From, To, overwrite = TRUE)
 
 ```
 
-
-
-
-
-
---------------------------------------------------------------------------------------
+------------------------------------------------------------------------
 
 # Quality Control Checks (Not to be published)
+
+## R Markdown Report Template
+
+This template was generated automatically from an R Markdown script available at <https://github.com/NPS-ARCN-CAKN/WRST-BAEA-Annual-Report-R-Markdown>. The information in the report was generated from bald eagle survey data in the NPS WRST_Caribou SQL Server database (inpyugamsvm01\nuna:WRST_Caribou).
 
 ## Survey Attributes from the Surveys Database Table
 
@@ -785,12 +781,15 @@ kable(t(df2))
 ```
 
 ### Abstract
+
 `r Abstract`
 
 ### DataProcessingNotes
+
 `r DataProcessingNotes`
 
 ### DataQualityNotes
+
 `r DataQualityNotes`
 
 ## List of comments
@@ -871,6 +870,3 @@ kable(df)
 ```
 
 `r nrow(df)` rows
-
-
-
