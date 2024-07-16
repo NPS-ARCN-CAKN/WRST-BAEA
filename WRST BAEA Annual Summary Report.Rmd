@@ -780,10 +780,6 @@ kable(t(df2))
 
 ```
 
-### Abstract
-
-`r Abstract`
-
 ### DataProcessingNotes
 
 `r DataProcessingNotes`
