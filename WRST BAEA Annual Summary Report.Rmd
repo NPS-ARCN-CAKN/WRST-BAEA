@@ -1,8 +1,12 @@
 ---
+title: ""
+author: ""
+date: ""
 output:
   html_document:
-    number_sections: no
-    toc: no
+    toc: true
+    toc_depth: 4
+    toc_float: true
 ---
 
 ```{=html}
@@ -83,6 +87,7 @@ tr,td,table {
 
 </style>
 ```
+
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
 
@@ -108,7 +113,7 @@ FigWidth = 6
 ```{r echo=FALSE,label="SET UP REPORT PARAMETERS HERE"}
 
 # Set up report parameters here
-SurveyYear = 2023  # Set this to the desired report year. Don't set to 2016 because that survey didn't come off and the script will bomb
+SurveyYear = 2024  # Set this to the desired report year. Don't set to 2016 because that survey didn't come off and the script will bomb
 
 # ODBC connection to the BAEA monitoring SQL Server Database. 
 # Contact data manager for server and database details.
@@ -217,7 +222,7 @@ PctOccupied = signif(Summary_SuccessByYearDataFrame_Current$`% nest occupied`,2)
 PctSuccessful = signif(Summary_SuccessByYearDataFrame_Current$`% nest success`,2)
 ProductivityUnknown = Summary_SuccessByYearDataFrame_Current$`Productivity unknown`
 
-ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, contains a high density of nesting Bald Eagles <i>(Haliaeetus leucocephalus)</i> and the National Park Service has identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In ",SurveyYear," we conducted an aerial bald eagle productivity survey in and around the park. Nest occupancy surveys were flown from ",GetLongDate(OStart)," to ",GetLongDate(OEnd),", followed by productivity surveys from ",GetLongDate(PStart)," to ",GetLongDate(PEnd),". We observed ",NestsLocated," nests, of which ",Occupied," were occupied (",PctOccupied,"%). Productivity surveys revealed that ",Successful," occupied nests produced young (",PctSuccessful,"% of occupied nests. Productivity could not be determined for ",ProductivityUnknown," nests). Successful nests resulted in ",YoungFledged," young, an average of ",YngPerSuccessfulNest," young per successful nest.",sep="")
+ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, contains a high density of nesting Bald Eagles <i>(Haliaeetus leucocephalus)</i> and the National Park Service has identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. In ",SurveyYear," we conducted an aerial bald eagle productivity survey in and around the park. Nest occupancy surveys were flown between ",GetLongDate(OStart)," and ",GetLongDate(OEnd),", followed by productivity surveys between ",GetLongDate(PStart)," and ",GetLongDate(PEnd),". We observed ",NestsLocated," nests, of which ",Occupied," were occupied (",PctOccupied,"%). Productivity surveys revealed that ",Successful," occupied nests produced young (",PctSuccessful,"% of occupied nests. Productivity could not be determined for ",ProductivityUnknown," nests). Successful nests resulted in ",YoungFledged," young, an average of ",YngPerSuccessfulNest," young per successful nest.",sep="")
 
 
 ```
@@ -754,115 +759,7 @@ file.copy(From, To, overwrite = TRUE)
 
 ```
 
-------------------------------------------------------------------------
-
-# Quality Control Checks (Not to be published)
-
 ## R Markdown Report Template
 
 This template was generated automatically from an R Markdown script available at <https://github.com/NPS-ARCN-CAKN/WRST-BAEA-Annual-Report-R-Markdown>. The information in the report was generated from bald eagle survey data in the NPS WRST_Caribou SQL Server database (inpyugamsvm01\nuna:WRST_Caribou).
 
-## Survey Attributes from the Surveys Database Table
-
-### Survey details
-
-```{r echo=FALSE}
-
-df = GetDataFrameFromDatabase(paste("SELECT Year, Abstract, DataDirectory, ReportIRMACode, ReportURL, DataProcessingNotes, DatasetIRMAReferenceCode, DataQualityNotes
-FROM Surveys
-WHERE Year = ",SurveyYear,sep=''))
-Abstract = df$Abstract
-DataProcessingNotes = df$DataProcessingNotes
-DataQualityNotes = df$DataQualityNotes
-
-df2 = sqldf('SELECT DataDirectory, ReportIRMACode, ReportURL, DatasetIRMAReferenceCode FROM df')
-kable(t(df2))
-
-```
-
-### DataProcessingNotes
-
-`r DataProcessingNotes`
-
-### DataQualityNotes
-
-`r DataQualityNotes`
-
-## List of comments
-
-Comments can be useful in troubleshooting strange results
-
-```{r echo=FALSE}
-
-df = GetDataFrameFromDatabase("SELECT Nest_ID,Comments_O as Comment,'Occupancy' as Survey  FROM SurveyData WHERE Year = 2023 And (NOT (Comments_O IS NULL))
-UNION
-SELECT Nest_ID,Comments_P,'Productivity' FROM SurveyData WHERE Year = 2023 And (NOT (Comments_P IS NULL))
-ORDER BY Nest_ID")
-
-kable(df)
-
-```
-
-`r nrow(df)` rows
-
-## Active nests with DateDiscoveredGone is not NULL
-
-All active nests should have DateDiscoveredGone attributes NULL
-
-```{r echo=FALSE}
-
-df = GetDataFrameFromDatabase(paste("SELECT Nest_ID, Date_O, Nest_O, Date_P, StatusCode_P, Comments_O, Comments_P, IsActive, DateDiscoveredGone
-FROM QC_ActiveNestsWithDateDiscoveredGoneIsNotNULL
-WHERE Year(Date_O) = ",SurveyYear,sep=''))
-kable(df)
-```
-
-`r nrow(df)` rows
-
-## Nests With No Productivity Observation
-
-Occasionally observers are unable to re-survey nests for the productivity portion of the survey due to bad weather, smoke, logistical, or other problems. These records should have their StatusCode_P attribute set to 'NS' (Not surveyed). The table below shows records with StatusCode_P = 'NS'
-
-```{r echo=FALSE}
-
-df = GetDataFrameFromDatabase(paste("SELECT Nest_ID, RiverSegment, Date_O, OccupancyStatus, ProductivityStatus,Comments_O,Comments_p
-FROM QC_NestsNotProductivitySurveyed
-WHERE (NOT (Date_O IS NULL)) AND (Date_P IS NULL)
-And Year(Date_O)=",SurveyYear," and StatusCode_P='NS'
-ORDER BY Date_O,Nest_ID",sep=''))
-kable(df)
-
-```
-
-`r nrow(df)` rows
-
-## Successful Nests With No Recorded Young
-
-The definition of nest success is observed young during the productivity survey. The following records, if any, should be checked.
-
-```{r echo=FALSE}
-
-df = GetDataFrameFromDatabase(paste("SELECT [Year]
-      ,[Nest_ID]
-      ,[NumYng]
-      ,[StatusCode_P]
-  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung]
-  WHERE Year = ",SurveyYear,sep=''))
-kable(df)
-
-```
-
-`r nrow(df)` rows
-
-## Chick Age Recorded But No Young Recorded
-
-The following records, if any, have a Chick_Age attribute that is not NULL, but NumYng attribute is NULL or zero. This means a chick stage was recorded, but no chicks were observed.
-
-```{r echo=FALSE}
-
-df = GetDataFrameFromDatabase(paste("SELECT * FROM QC_ChickAgeButNoYoung WHERE Year = ",SurveyYear,sep=''))
-kable(df)
-
-```
-
-`r nrow(df)` rows
