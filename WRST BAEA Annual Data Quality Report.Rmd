@@ -1,0 +1,404 @@
+---
+title: ""
+author: ""
+date: ""
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+---
+
+```{=html}
+<style>
+
+body {
+    font-family: "Times New Roman";
+    font-size: 11.5pt;
+    color: black;
+}
+
+.title {
+  font-family: "Times New Roman";
+  font-size: 16pt;
+  font-weight: bold;
+  color: black;
+}
+
+h1 {
+    font-family: "Arial";
+    font-size: 16pt;
+    font-weight: bold;
+    color: black;
+}
+
+
+h2 {
+  font-family: "Arial";
+  font-size: 11.5pt;
+  font-weight: bold;
+  color: black;
+}
+
+h3 {
+  font-family: "Arial";
+  font-size: 10.5pt;
+  font-weight: bold;
+  color: black;
+}
+
+h4 {
+    font-family: "Times New Roman";
+    font-size: 12pt;
+    color: black;
+}
+
+p {
+    font-family: "Times New Roman";
+    font-size: 11.5pt;
+    color: black;
+}
+
+.caption {
+    font-family: "Arial";
+    font-size: 10pt;
+    color: black;
+}
+
+th {
+    font-family: "Arial";
+    font-size: 9pt;
+    font-weight: bold;
+    color: black;
+}
+
+tr,td,table {
+    font-family: "Arial";
+    font-size: 9pt;
+    color: black;
+}
+
+.header{
+  font-family: "Arial";
+  font-size: 10pt;
+  font-weight: bold;
+  color: black;
+}
+
+</style>
+```
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
+
+options(download.file.method = "wininet")
+#install.packages("sqldf")
+# Load libraries
+library(RODBC)
+library(knitr)
+library(ggplot2)
+library(sp)
+library(sf)
+library(sqldf)
+library(tidyverse)
+
+
+# Make kable show blanks for NAs
+options(knitr.kable.NA = '')
+
+# These parameters restrict the dimensions of plots to 6 metric inches so they don't blow out Word
+FigWidth = 6
+```
+
+```{r echo=FALSE,label="SET UP REPORT PARAMETERS HERE"}
+
+# Set up report parameters here
+SurveyYear = 2024  # Set this to the desired report year. Don't set to 2016 because that survey didn't come off and the script will bomb
+
+# ODBC connection to the BAEA monitoring SQL Server Database. 
+# Contact data manager for server and database details.
+# ConnectionString to the bald eagles Sql Server database
+BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna;Database=CAKN_BaldEagles;trusted_connection=YES"
+
+# Database connection to the eagles database
+BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString)
+
+# Set the path to shapefiles used in the map, AK, Parks, Rivers, etc
+ShpPath = "C:/Work/GIS Common Layers/"
+
+```
+
+---
+title: Annual Report on Vital Signs monitoring of distribution and abundance of Bald Eagles in Wrangell-St. Elias National Park and Preserve, `r SurveyYear` 
+output:
+  html_document:
+---
+
+```{r echo=FALSE,label="Functions"}
+
+# Current date
+CurrentDate = format(Sys.Date(), format='%B %d, %Y') # Get the current date
+
+# Function to return data frames from SQL database queries
+GetDataFrameFromDatabase <- function(Sql) {
+   return(sqlQuery(BaldEaglesConnection, Sql))
+}
+
+# Function to convert a date string to a long date
+GetLongDate <- function(Date) {
+  return(format(as.Date(Date), format="%B %d, %Y"))
+}
+
+# These counters are used to number the tables and figures. Each gets incremented after use.
+TableCounter = 1
+FigureCounter = 1
+
+```
+
+
+# Quality Control Checks (Not to be published)
+
+## Nests
+
+### QC: Active nests with DateDiscoveredGone is not NULL
+
+All active nests should have DateDiscoveredGone attributes NULL
+
+```{r echo=FALSE}
+Sql = paste("SELECT Nest_ID, Date_O, Nest_O, Date_P, StatusCode_P, Comments_O, Comments_P, IsActive, DateDiscoveredGone
+FROM QC_ActiveNestsWithDateDiscoveredGoneIsNotNULL
+WHERE Year(Date_O) = ",SurveyYear,sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+
+`r Sql` 
+
+`r nrow(df)` rows
+
+## QC: Nests With No Productivity Observation
+
+Occasionally observers are unable to re-survey nests for the productivity portion of the survey due to bad weather, smoke, logistical, or other problems. These records should have their StatusCode_P attribute set to 'NS' (Not surveyed). The table below shows records with StatusCode_P = 'NS'
+
+```{r echo=FALSE}
+Sql = paste("SELECT Nest_ID, RiverSegment, Date_O, OccupancyStatus, ProductivityStatus,Comments_O,Comments_p
+FROM QC_NestsNotProductivitySurveyed
+WHERE (NOT (Date_O IS NULL)) AND (Date_P IS NULL)
+And Year(Date_O)=",SurveyYear," and StatusCode_P='NS'
+ORDER BY Date_O,Nest_ID",sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+## QC: Chick Age Recorded But No Young Recorded
+
+The following records, if any, have a Chick_Age attribute that is not NULL, but NumYng attribute is NULL or zero. This means a chick stage was recorded, but no chicks were observed.
+
+```{r echo=FALSE}
+Sql = paste("SELECT * FROM QC_ChickAgeButNoYoung WHERE Year = ",SurveyYear,sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+## QC: Inactive nests that possibly should be active
+
+The following nests, if any, should possibly be inactivated.
+
+```{r echo=FALSE}
+Sql = paste("SELECT  [Nest_ID]
+      ,[IsActive]
+      ,[NumberOfTimesNotFoundInTheLast2Surveys]
+      ,[LastSightingDate]
+      ,[Comments]
+--      ,[SELECTQuery]
+--     ,[NestsQuery]
+--      ,[UPDATEQuery]
+  FROM [CAKN_BaldEagles].[dbo].[QC_Nests_InActiveNestsThatPossiblyShouldBeActive]
+ORDER BY LastSightingDate",sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+## QC: Active nests that possibly should be inactive
+
+The following nests, if any, should possibly be inactivated.
+
+```{r echo=FALSE}
+Sql = paste("SELECT        Nest_ID, IsActive, DiscoverDate, LastSightingDate, NumberOfTimesNotFoundInTheLast2Surveys, Comments
+--, HelperQuery, UpdateQuery
+FROM            QC_NestsThatProbablyShouldBeInactivated",sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+## QC: Successful Nests With No Recorded Young
+
+The definition of nest success is observed young during the productivity survey. The following records, if any, should be checked.
+
+```{r echo=FALSE}
+Sql = paste("SELECT [Year]
+      ,[Nest_ID]
+      ,[NumYng]
+      ,[StatusCode_P]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung]
+  WHERE Year = ",SurveyYear,sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+
+## QC: Active nests that were not search for during the latest survey
+
+The results below active nests, if any, that were not searched for during the latest survey.
+
+```{r echo=FALSE}
+Sql = paste("SELECT TOP (1000) [Nest_ID]
+      ,[RiverSegment]
+      ,[LastSightingDate]
+      ,[IsActive]
+      ,[NumberOfTimesNotFoundInTheLast2Surveys]
+      ,[Comments]
+ --     ,[UPDATEQuery]
+--      ,[HelperQuery]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_ActiveNestsNotSearchedForDuringLastSurvey]",sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+
+## QC: Records from the latest survey that have initiated nests, but no follow up productivity information
+
+The following records, if any, indicate that nests were observed as initiated, but no productivity information exists.
+
+```{r echo=FALSE}
+Sql = paste("SELECT [Year]
+      ,[Total records]
+      ,[Number of initiated nests]
+      ,[Initiated nests with no follow up survey]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_MissingLateProductivitySurvey_Summary] 
+  WHERE Year=",SurveyYear,sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+
+
+## QC: Possibly mistaken nest initiation decisions
+
+Initiated nests should have at least two adults present during the occupancy survey with incubating behaviors observed. The following observations may have been mistakenly ruled as initiated nests since these rules were violated and the nests did not result in young.
+
+```{r echo=FALSE}
+Sql = paste("SELECT TOP (1000) [Year]
+      ,[Nest_ID]
+      ,[Date_O]
+      ,[Nest_O]
+      ,[NumEggs_O]
+      ,[NumAds_O]
+      ,[AdBehav1_O]
+      ,[AdBehav2_O]
+      ,[NumYng]
+      ,[StatusCode_P]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_PossiblyBadNestInitiations]
+  WHERE Year=",SurveyYear," ORDER BY Nest_ID",sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+
+## QC: Nests marked successful that did not produce any young
+
+Nests marked successful that did not produce any young
+
+```{r echo=FALSE}
+Sql = paste("SELECT [Nest_ID]
+      ,[NumYng]
+      ,[StatusCode_P]
+      --,Year
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung] WHERE Year=",SurveyYear," ORDER BY Nest_ID",sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+
+## QC: QCQuery
+
+QCExplanation
+
+```{r echo=FALSE}
+Sql = paste("",sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+
+## QC: List of comments
+
+Comments can be useful in troubleshooting strange results
+
+```{r echo=FALSE}
+
+df = GetDataFrameFromDatabase("SELECT Nest_ID,Comments_O as Comment,'Occupancy' as Survey  FROM SurveyData WHERE Year = 2023 And (NOT (Comments_O IS NULL))
+UNION
+SELECT Nest_ID,Comments_P,'Productivity' FROM SurveyData WHERE Year = 2023 And (NOT (Comments_P IS NULL))
+ORDER BY Nest_ID")
+
+kable(df)
+
+```
+
+## R Markdown Report Template
+
+This template was generated automatically from an R Markdown script available at <https://github.com/NPS-ARCN-CAKN/WRST-BAEA-Annual-Report-R-Markdown>. The information in the report was generated from bald eagle survey data in the NPS WRST_Caribou SQL Server database (inpyugamsvm01\nuna:WRST_Caribou).
+
