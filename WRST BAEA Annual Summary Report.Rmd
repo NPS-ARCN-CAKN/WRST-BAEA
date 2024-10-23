@@ -759,7 +759,7 @@ file.copy(From, To, overwrite = TRUE)
 
 ```
 
-## R Markdown Report Template
+<!-- ## R Markdown Report Template -->
 
-This template was generated automatically from an R Markdown script available at <https://github.com/NPS-ARCN-CAKN/WRST-BAEA-Annual-Report-R-Markdown>. The information in the report was generated from bald eagle survey data in the NPS WRST_Caribou SQL Server database (inpyugamsvm01\nuna:WRST_Caribou).
+<!-- This template was generated automatically from an R Markdown script available at <https://github.com/NPS-ARCN-CAKN/WRST-BAEA-Annual-Report-R-Markdown>. The information in the report was generated from bald eagle survey data in the NPS WRST_Caribou SQL Server database (inpyugamsvm01\nuna:WRST_Caribou). -->
 
