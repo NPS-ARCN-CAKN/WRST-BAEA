@@ -128,11 +128,7 @@ ShpPath = "C:/Work/GIS Common Layers/"
 
 ```
 
----
-title: Annual Report on Vital Signs monitoring of distribution and abundance of Bald Eagles in Wrangell-St. Elias National Park and Preserve, `r SurveyYear` 
-output:
-  html_document:
----
+
 
 ```{r echo=FALSE,label="Functions"}
 
@@ -156,11 +152,28 @@ FigureCounter = 1
 ```
 
 
-# Quality Control Checks (Not to be published)
+# Post-survey Data Quality Report For The Bald Eagles Monitoring Program in Wrangell-St. Elias National Park and Preserve, Alaska
 
-## Nests
+Scott D. Miller  
+National Park Service, Arctic Inventory and Monitoring Network  
+240 W. 5th Ave  
+Anchorage, Alaska 99501   
 
-### QC: Active nests with DateDiscoveredGone is not NULL
+`r CurrentDate`
+
+U.S. Department of the Interior\
+National Park Service, Alaska Region\
+Anchorage, Alaska\
+
+# Introduction
+
+In the realm of biological sciences, the integrity of data is crucial for advancing our understanding of complex biological processes and ecosystems. Ensuring high data quality is fundamental for producing reliable results, validating hypotheses, and making informed decisions for the management of natural areas, enhancing conservation efforts, and communicating results to the public. Data quality control is a critical step in the scientific life cycle for long-term monitoring of ecosystems, ensuring the accuracy, consistency, and completeness of data collected. This report documents the quality control procedures executed on the field data collected during the `r SurveyYear` bald eagles monitoring survey in Wrangell-St. Elias National Park and Preserve in Alaska.
+
+Each section of this report details a quality control check performed on the master bald eagles monitoring database, along with any findings. Any identified quality control defects should be fixed or documented. The report is broken out into two major sections related to 1) information about eagle nests and 2) survey results.
+
+# Quality Control Tests: Nests
+
+## QC-1: Active nests with DateDiscoveredGone is not NULL
 
 All active nests should have DateDiscoveredGone attributes NULL
 
@@ -178,7 +191,7 @@ kable(df)
 
 `r nrow(df)` rows
 
-## QC: Nests With No Productivity Observation
+## QC-2: Nests With No Productivity Observation
 
 Occasionally observers are unable to re-survey nests for the productivity portion of the survey due to bad weather, smoke, logistical, or other problems. These records should have their StatusCode_P attribute set to 'NS' (Not surveyed). The table below shows records with StatusCode_P = 'NS'
 
@@ -197,46 +210,33 @@ kable(df)
 
 `r nrow(df)` rows
 
-## QC: Chick Age Recorded But No Young Recorded
 
-The following records, if any, have a Chick_Age attribute that is not NULL, but NumYng attribute is NULL or zero. This means a chick stage was recorded, but no chicks were observed.
 
-```{r echo=FALSE}
-Sql = paste("SELECT * FROM QC_ChickAgeButNoYoung WHERE Year = ",SurveyYear,sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
+<!-- ## QC: Inactive nests that possibly should be active -->
 
-```
+<!-- The following nests, if any, should possibly be inactivated. -->
 
-`r Sql`
+<!-- ```{r echo=FALSE} -->
+<!-- Sql = paste("SELECT  [Nest_ID] -->
+<!--       ,[IsActive] -->
+<!--       ,[NumberOfTimesNotFoundInTheLast2Surveys] -->
+<!--       ,[LastSightingDate] -->
+<!--       ,[Comments] -->
+<!-- --      ,[SELECTQuery] -->
+<!-- --     ,[NestsQuery] -->
+<!-- --      ,[UPDATEQuery] -->
+<!--   FROM [CAKN_BaldEagles].[dbo].[QC_Nests_InActiveNestsThatPossiblyShouldBeActive] -->
+<!-- ORDER BY LastSightingDate",sep='') -->
+<!-- df = GetDataFrameFromDatabase(Sql) -->
+<!-- kable(df) -->
 
-`r nrow(df)` rows
+<!-- ``` -->
 
-## QC: Inactive nests that possibly should be active
+<!-- `r Sql` -->
 
-The following nests, if any, should possibly be inactivated.
+<!-- `r nrow(df)` rows -->
 
-```{r echo=FALSE}
-Sql = paste("SELECT  [Nest_ID]
-      ,[IsActive]
-      ,[NumberOfTimesNotFoundInTheLast2Surveys]
-      ,[LastSightingDate]
-      ,[Comments]
---      ,[SELECTQuery]
---     ,[NestsQuery]
---      ,[UPDATEQuery]
-  FROM [CAKN_BaldEagles].[dbo].[QC_Nests_InActiveNestsThatPossiblyShouldBeActive]
-ORDER BY LastSightingDate",sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
-
-```
-
-`r Sql`
-
-`r nrow(df)` rows
-
-## QC: Active nests that possibly should be inactive
+## QC-3: Active nests that possibly should be inactive
 
 The following nests, if any, should possibly be inactivated.
 
@@ -253,33 +253,20 @@ kable(df)
 
 `r nrow(df)` rows
 
-## QC: Successful Nests With No Recorded Young
-
-The definition of nest success is observed young during the productivity survey. The following records, if any, should be checked.
-
-```{r echo=FALSE}
-Sql = paste("SELECT [Year]
-      ,[Nest_ID]
-      ,[NumYng]
-      ,[StatusCode_P]
-  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung]
-  WHERE Year = ",SurveyYear,sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
-
-```
-
-`r Sql`
-
-`r nrow(df)` rows
 
 
-## QC: Active nests that were not search for during the latest survey
+
+
+
+
+# Quality Control Tests: Survey Observations
+
+## QC-4: Active nests that were not search for during the latest survey
 
 The results below active nests, if any, that were not searched for during the latest survey.
 
 ```{r echo=FALSE}
-Sql = paste("SELECT TOP (1000) [Nest_ID]
+Sql = paste("SELECT [Nest_ID]
       ,[RiverSegment]
       ,[LastSightingDate]
       ,[IsActive]
@@ -298,7 +285,7 @@ kable(df)
 `r nrow(df)` rows
 
 
-## QC: Records from the latest survey that have initiated nests, but no follow up productivity information
+## QC-5: Records from the latest survey that have initiated nests, but no follow up productivity information
 
 The following records, if any, indicate that nests were observed as initiated, but no productivity information exists.
 
@@ -320,12 +307,12 @@ kable(df)
 
 
 
-## QC: Possibly mistaken nest initiation decisions
+## QC-6: Possibly mistaken nest initiation decisions
 
 Initiated nests should have at least two adults present during the occupancy survey with incubating behaviors observed. The following observations may have been mistakenly ruled as initiated nests since these rules were violated and the nests did not result in young.
 
 ```{r echo=FALSE}
-Sql = paste("SELECT TOP (1000) [Year]
+Sql = paste("SELECT [Year]
       ,[Nest_ID]
       ,[Date_O]
       ,[Nest_O]
@@ -347,9 +334,9 @@ kable(df)
 `r nrow(df)` rows
 
 
-## QC: Nests marked successful that did not produce any young
+## QC-7: Nests marked successful that did not produce any young
 
-Nests marked successful that did not produce any young
+Nests marked successful that did not produce any young.
 
 ```{r echo=FALSE}
 Sql = paste("SELECT [Nest_ID]
@@ -367,12 +354,14 @@ kable(df)
 `r nrow(df)` rows
 
 
-## QC: QCQuery
 
-QCExplanation
+## QC-8: Chick Age Recorded But No Young Recorded
+
+The following records, if any, have a Chick_Age attribute that is not NULL, but NumYng attribute is NULL or zero. This means a chick stage was recorded, but no chicks were observed.
 
 ```{r echo=FALSE}
-Sql = paste("",sep='')
+Sql = paste("SELECT        Year, Nest_ID, Date_O, Nest_O, Date_P, StatusCode_P, NumYng, Chick_Age, Comments_O, Comments_P
+FROM            QC_ChickAgeButNoYoung WHERE Year = ",SurveyYear,sep='')
 df = GetDataFrameFromDatabase(Sql)
 kable(df)
 
@@ -383,16 +372,42 @@ kable(df)
 `r nrow(df)` rows
 
 
+## QC-9: Successful Nests With No Recorded Young
+
+The definition of nest success is observed young during the productivity survey. The following records, if any, should be checked.
+
+```{r echo=FALSE}
+Sql = paste("SELECT [Year]
+      ,[Nest_ID]
+      ,[NumYng]
+      ,[StatusCode_P]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung]
+  WHERE Year = ",SurveyYear,sep='')
+df = GetDataFrameFromDatabase(Sql)
+kable(df)
+
+```
+
+`r Sql`
+
+`r nrow(df)` rows
+
+
+
 ## QC: List of comments
 
 Comments can be useful in troubleshooting strange results
 
 ```{r echo=FALSE}
 
-df = GetDataFrameFromDatabase("SELECT Nest_ID,Comments_O as Comment,'Occupancy' as Survey  FROM SurveyData WHERE Year = 2023 And (NOT (Comments_O IS NULL))
+df = GetDataFrameFromDatabase(paste("SELECT Nest_ID,Comments_O as Comment,'Occupancy' as Survey  
+FROM SurveyData 
+WHERE Year = ",SurveyYear," And (NOT (Comments_O IS NULL))
 UNION
-SELECT Nest_ID,Comments_P,'Productivity' FROM SurveyData WHERE Year = 2023 And (NOT (Comments_P IS NULL))
-ORDER BY Nest_ID")
+SELECT Nest_ID,Comments_P,'Productivity' 
+FROM SurveyData 
+WHERE Year = ",SurveyYear," And (NOT (Comments_P IS NULL))
+ORDER BY Nest_ID",sep=""))
 
 kable(df)
 
