@@ -58,7 +58,19 @@ tr {
 
 </style>
 ```
+
 # Certified Dataset: Long-term Monitoring of Bald Eagle Abundance and Distribution in Wrangell - St. Elias National Park and Preserve
+
+Scott D. Miller  
+National Park Service, Arctic Inventory and Monitoring Network  
+240 W. 5th Ave  
+Anchorage, Alaska 99501   
+
+`r format(Sys.Date(), "%B %d, %Y")`
+
+U.S. Department of the Interior\
+National Park Service, Alaska Region\
+Anchorage, Alaska\
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
