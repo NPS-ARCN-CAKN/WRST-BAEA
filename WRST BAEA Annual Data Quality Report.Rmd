@@ -309,7 +309,7 @@ kable(df)
 
 ## QC-6: Possibly mistaken nest initiation decisions
 
-Initiated nests should have at least two adults present during the occupancy survey with incubating behaviors observed. The following observations may have been mistakenly ruled as initiated nests since these rules were violated and the nests did not result in young.
+Initiated nests should have at least two adults present during the occupancy survey with incubating behaviors observed. The following observations may have been mistakenly ruled as initiated nests.
 
 ```{r echo=FALSE}
 Sql = paste("SELECT [Year]
