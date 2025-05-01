@@ -94,7 +94,7 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming m
 options(download.file.method = "wininet")
 #install.packages("sqldf")
 # Load libraries
-library(RODBC)
+library(odbc)
 library(knitr)
 library(ggplot2)
 library(sp)
@@ -117,11 +117,8 @@ SurveyYear = 2024  # Set this to the desired report year. Don't set to 2016 beca
 
 # ODBC connection to the BAEA monitoring SQL Server Database. 
 # Contact data manager for server and database details.
-# ConnectionString to the bald eagles Sql Server database
-BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna;Database=CAKN_BaldEagles;trusted_connection=YES"
-
-# Database connection to the eagles database
-BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString)
+# Connection to the bald eagles Sql Server database
+Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "inpyugamsvm01\\nuna", Database = "CAKN_BaldEagles")
 
 # Set the path to shapefiles used in the map, AK, Parks, Rivers, etc
 ShpPath = "C:/Work/GIS Common Layers/"
@@ -141,7 +138,7 @@ CurrentDate = format(Sys.Date(), format='%B %d, %Y') # Get the current date
 
 # Function to return data frames from SQL database queries
 GetDataFrameFromDatabase <- function(Sql) {
-   return(sqlQuery(BaldEaglesConnection, Sql))
+   return(dbGetQuery(Connection, Sql))
 }
 
 # Function to convert a date string to a long date
