@@ -94,7 +94,7 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming m
 options(download.file.method = "wininet")
 #install.packages("sqldf")
 # Load libraries
-library(RODBC)
+library(odbc)
 library(knitr)
 library(ggplot2)
 library(sp)
@@ -115,13 +115,8 @@ FigWidth = 6
 # Set up report parameters here
 SurveyYear = 2024  # Set this to the desired report year. Don't set to 2016 because that survey didn't come off and the script will bomb
 
-# ODBC connection to the BAEA monitoring SQL Server Database. 
-# Contact data manager for server and database details.
-# ConnectionString to the bald eagles Sql Server database
-BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna;Database=CAKN_BaldEagles;trusted_connection=YES"
-
-# Database connection to the eagles database
-BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString)
+# Database connection
+Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "inpyugamsvm01\\nuna", Database = "CAKN_BaldEagles")
 
 # Set the path to shapefiles used in the map, AK, Parks, Rivers, etc
 ShpPath = "C:/Work/GIS Common Layers/"
@@ -135,15 +130,31 @@ ShpPath = "C:/Work/GIS Common Layers/"
 # Current date
 CurrentDate = format(Sys.Date(), format='%B %d, %Y') # Get the current date
 
-# Function to return data frames from SQL database queries
-GetDataFrameFromDatabase <- function(Sql) {
-   return(sqlQuery(BaldEaglesConnection, Sql))
-}
-
 # Function to convert a date string to a long date
 GetLongDate <- function(Date) {
   return(format(as.Date(Date), format="%B %d, %Y"))
 }
+
+GetQCSection = function(Sql){
+  cat("## QC-X: QCTestDescription  \n",sep="")
+  cat("\n",sep="")
+  cat("DESCRIPTION  \n",sep="")
+  cat("\n",sep="")
+  cat("",sep="")
+  cat("```{r echo=FALSE}  \n",sep="")
+  cat("Sql = paste(\"",Sql,"\",sep=\"\")\n",sep="")
+  cat("df = dbGetQuery(Connection,Sql)  \n",sep="")
+  cat("if(nrow(df)==0){  \n",sep="")
+    cat("    knitr::asis_output(\"*PASSED*. Zero records returned.  \")  \n",sep="")
+  cat("} else{  \n",sep="")
+    cat("    knitr::kable(df)  \n",sep="")
+  cat("}  \n",sep="")
+  cat("```  \n",sep="")
+  cat("`r Sql`\n\n",sep="") 
+  cat("`r nrow(df)` rows  \n\n",sep="")
+}
+#Test
+# GetQCSection("select x from y")
 
 # These counters are used to number the tables and figures. Each gets incremented after use.
 TableCounter = 1
@@ -173,7 +184,7 @@ Each section of this report details a quality control check performed on the mas
 
 # Quality Control Tests: Nests
 
-## QC-1: Active nests with DateDiscoveredGone is not NULL
+## QC-N01: Active nests with DateDiscoveredGone is not NULL
 
 All active nests should have DateDiscoveredGone attributes NULL
 
@@ -181,8 +192,13 @@ All active nests should have DateDiscoveredGone attributes NULL
 Sql = paste("SELECT Nest_ID, Date_O, Nest_O, Date_P, StatusCode_P, Comments_O, Comments_P, IsActive, DateDiscoveredGone
 FROM QC_ActiveNestsWithDateDiscoveredGoneIsNotNULL
 WHERE Year(Date_O) = ",SurveyYear,sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
+
 
 ```
 
@@ -191,7 +207,7 @@ kable(df)
 
 `r nrow(df)` rows
 
-## QC-2: Nests With No Productivity Observation
+## QC-N02: Nests With No Productivity Observation
 
 Occasionally observers are unable to re-survey nests for the productivity portion of the survey due to bad weather, smoke, logistical, or other problems. These records should have their StatusCode_P attribute set to 'NS' (Not surveyed). The table below shows records with StatusCode_P = 'NS'
 
@@ -201,9 +217,12 @@ FROM QC_NestsNotProductivitySurveyed
 WHERE (NOT (Date_O IS NULL)) AND (Date_P IS NULL)
 And Year(Date_O)=",SurveyYear," and StatusCode_P='NS'
 ORDER BY Date_O,Nest_ID",sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
-
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
 ```
 
 `r Sql`
@@ -212,31 +231,9 @@ kable(df)
 
 
 
-<!-- ## QC: Inactive nests that possibly should be active -->
 
-<!-- The following nests, if any, should possibly be inactivated. -->
 
-<!-- ```{r echo=FALSE} -->
-<!-- Sql = paste("SELECT  [Nest_ID] -->
-<!--       ,[IsActive] -->
-<!--       ,[NumberOfTimesNotFoundInTheLast2Surveys] -->
-<!--       ,[LastSightingDate] -->
-<!--       ,[Comments] -->
-<!-- --      ,[SELECTQuery] -->
-<!-- --     ,[NestsQuery] -->
-<!-- --      ,[UPDATEQuery] -->
-<!--   FROM [CAKN_BaldEagles].[dbo].[QC_Nests_InActiveNestsThatPossiblyShouldBeActive] -->
-<!-- ORDER BY LastSightingDate",sep='') -->
-<!-- df = GetDataFrameFromDatabase(Sql) -->
-<!-- kable(df) -->
-
-<!-- ``` -->
-
-<!-- `r Sql` -->
-
-<!-- `r nrow(df)` rows -->
-
-## QC-3: Active nests that possibly should be inactive
+## QC-N03: Active nests that possibly should be inactive
 
 The following nests, if any, should possibly be inactivated.
 
@@ -244,8 +241,12 @@ The following nests, if any, should possibly be inactivated.
 Sql = paste("SELECT        Nest_ID, IsActive, DiscoverDate, LastSightingDate, NumberOfTimesNotFoundInTheLast2Surveys, Comments
 --, HelperQuery, UpdateQuery
 FROM            QC_NestsThatProbablyShouldBeInactivated",sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
 
 ```
 
@@ -254,14 +255,79 @@ kable(df)
 `r nrow(df)` rows
 
 
+## QC-N04: Minimum/Maximum Nest Spatial Coordinates
+
+This section shows the minimum and maximum spatial coordinates of nests. The objective is to debug nests with coordinates equal to zero, or that are NULL. 
+
+```{r echo=FALSE}  
+Sql = paste("SELECT TOP (1000) [Minimum latitude]
+      ,[Maximum latitude]
+      ,[Minimum longitude]
+      ,[Maximum longitude]
+      ,[Minimum non-zero latitude]
+      ,[Maximum non-zero latitude]
+      ,[Minimum non-zero longitude]
+      ,[Maximum non-zero longitude]
+  FROM [CAKN_BaldEagles].[dbo].[QC_Nests_MinMaxBoundingBoxCheck]",sep="")
+df = dbGetQuery(Connection,Sql)  
+knitr::kable(t(df))  
+
+```  
 
 
+## QC-N05: Nests missing spatial coordinates  
+
+The following nests are missing spatial coordinates.  
+
+```{r echo=FALSE}  
+Sql = paste("SELECT [Nest_ID],[Lon-NAD83],[Lat-NAD83],[Comments]  FROM [CAKN_BaldEagles].[dbo].[QC_Nests_MissingCoordinates] ORDER BY Nest_ID",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+```  
+
+## QC-N06: Active nests with DateDiscoveredGone is not NULL
+
+Active nests should have DateDiscoveredGone = NULL  
+
+```{r echo=FALSE}  
+Sql = paste("SELECT [Nest_ID],[IsActive],[DateDiscoveredGone],[Comments]
+-- ,NestDebugger 
+FROM [CAKN_BaldEagles].[dbo].[QC_Nests_NestIsActiveButDateDiscoveredGoneIsNotNull] ORDER BY Nest_ID",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+} 
+
+```  
+
+## QC-N07: Nests with no observations
+
+The following nests have no observations. They may have been lost the same survey year they were discovered.
+
+```{r echo=FALSE}  
+Sql = paste("SELECT Nest_ID, DiscoverDate, TreeIsDead, DateDiscoveredGone, Comments FROM QC_Nests_NestsWithNoObservations",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+```  
+`r Sql`
+
+`r nrow(df)` rows  
 
 
 
 # Quality Control Tests: Survey Observations
 
-## QC-4: Active nests that were not search for during the latest survey
+## QC-S01: Active nests that were not search for during the latest survey
 
 The results below active nests, if any, that were not searched for during the latest survey.
 
@@ -275,8 +341,12 @@ Sql = paste("SELECT [Nest_ID]
  --     ,[UPDATEQuery]
 --      ,[HelperQuery]
   FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_ActiveNestsNotSearchedForDuringLastSurvey]",sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
 
 ```
 
@@ -285,20 +355,27 @@ kable(df)
 `r nrow(df)` rows
 
 
-## QC-5: Records from the latest survey that have initiated nests, but no follow up productivity information
+## QC-S02: Inactive nests that possibly should be active
 
-The following records, if any, indicate that nests were observed as initiated, but no productivity information exists.
+The following nests, if any, should possibly be inactivated.
 
 ```{r echo=FALSE}
-Sql = paste("SELECT [Year]
-      ,[Total records]
-      ,[Number of initiated nests]
-      ,[Initiated nests with no follow up survey]
-  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_MissingLateProductivitySurvey_Summary] 
-  WHERE Year=",SurveyYear,sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
-
+Sql = paste("SELECT  [Nest_ID]
+      ,[IsActive]
+      ,[NumberOfTimesNotFoundInTheLast2Surveys]
+      ,[LastSightingDate]
+      ,[Comments]
+--      ,[SELECTQuery]
+--     ,[NestsQuery]
+--      ,[UPDATEQuery]
+  FROM [CAKN_BaldEagles].[dbo].[QC_Nests_InActiveNestsThatPossiblyShouldBeActive]
+ORDER BY LastSightingDate",sep='')
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
 ```
 
 `r Sql`
@@ -307,7 +384,7 @@ kable(df)
 
 
 
-## QC-6: Possibly mistaken nest initiation decisions
+## QC-S03: Possibly mistaken nest initiation decisions
 
 Initiated nests should have at least two adults present during the occupancy survey with incubating behaviors observed. The following observations may have been mistakenly ruled as initiated nests.
 
@@ -324,8 +401,12 @@ Sql = paste("SELECT [Year]
       ,[StatusCode_P]
   FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_PossiblyBadNestInitiations]
   WHERE Year=",SurveyYear," ORDER BY Nest_ID",sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
 
 ```
 
@@ -334,7 +415,7 @@ kable(df)
 `r nrow(df)` rows
 
 
-## QC-7: Nests marked successful that did not produce any young
+## QC-S04: Nests marked successful that did not produce any young
 
 Nests marked successful that did not produce any young.
 
@@ -344,8 +425,12 @@ Sql = paste("SELECT [Nest_ID]
       ,[StatusCode_P]
       --,Year
   FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung] WHERE Year=",SurveyYear," ORDER BY Nest_ID",sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
 
 ```
 
@@ -355,15 +440,19 @@ kable(df)
 
 
 
-## QC-8: Chick Age Recorded But No Young Recorded
+## QC-S05: Chick Age Recorded But No Young Recorded
 
 The following records, if any, have a Chick_Age attribute that is not NULL, but NumYng attribute is NULL or zero. This means a chick stage was recorded, but no chicks were observed.
 
 ```{r echo=FALSE}
 Sql = paste("SELECT        Year, Nest_ID, Date_O, Nest_O, Date_P, StatusCode_P, NumYng, Chick_Age, Comments_O, Comments_P
 FROM            QC_ChickAgeButNoYoung WHERE Year = ",SurveyYear,sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
 
 ```
 
@@ -372,7 +461,7 @@ kable(df)
 `r nrow(df)` rows
 
 
-## QC-9: Successful Nests With No Recorded Young
+## QC-S06: Successful Nests With No Recorded Young
 
 The definition of nest success is observed young during the productivity survey. The following records, if any, should be checked.
 
@@ -383,8 +472,12 @@ Sql = paste("SELECT [Year]
       ,[StatusCode_P]
   FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung]
   WHERE Year = ",SurveyYear,sep='')
-df = GetDataFrameFromDatabase(Sql)
-kable(df)
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
+}
 
 ```
 
@@ -393,23 +486,214 @@ kable(df)
 `r nrow(df)` rows
 
 
+## QC-S07: Possibly incorrect NestIsGoneConfirmation  
 
-## QC: List of comments
+Each observation after the one where the nest is observed gone should have its NestIsGoneConfirmation attribute set to 1 in order to exclude it from analyses. This test returns nests that violate this premise. Use the NestDebugger stored procedure to troubleshoot the problem.
+
+```{r echo=FALSE}  
+Sql = paste("SELECT TOP (1000) [Nest_ID]
+      ,[YearNestIsGone]
+      --,[FixNestIsGoneConfirmation]
+      ,[NestDebugger]
+      --,[UpdateQuery]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_IncorrectNestIsGoneConfirmation]",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+
+```  
+`r Sql`
+
+`r nrow(df)` rows  
+
+
+## QC-S08: Initiated nests missing follow up
+
+The following records are missing follow up productivity survey information (date, productivity code or productivity metrics).  
+
+```{r echo=FALSE}  
+Sql = paste("SELECT TOP (1000) [Year]
+      ,[Nest_ID]
+      ,[Date_O]
+      ,[Date_P]
+      ,[Nest_O]
+      ,[StatusCode_P]
+      ,[Comments_O]
+      ,[Comments_P]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_InitiatedNestsMissingFollowUp]",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+```  
+`r Sql`
+
+`r nrow(df)` rows  
+
+
+## QC-S09: Multiple NestIsGone = 1  
+
+Each Nest should only have one NestIsGone attribute set to 1 (true) to indicate the year the nest was observed gone. Subsequent observations to verify the nest is gone should have their NestIsGoneConfirmation attributes set to 1 so they can be filtered out of analyses since they hold no data. This view shows nest records having multiple records having NestIsGone = 1
+
+EXEC NestDebugger will show pertinent Nest and SurveyData records for troubleshooting 
+
+EXEC SetNestIsGone will output some Update queries that may help to fix the problems rapidly.
+
+```{r echo=FALSE}  
+Sql = paste("SELECT [Nest_ID]
+      ,[NestIsGoneCount]
+      ,[NestDebugger]
+      ,[FixNestIsGone]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_MultipleNestIsGoneDates] ORDER BY Nest_ID",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+
+```  
+`r Sql`
+
+`r nrow(df)` rows  
+
+
+## QC-S10: Multiple SurveyData.NestIsNew = 1 records
+
+Only the first nest observation should have its SurveyData.NestIsNew attribute set to 1.  
+
+```{r echo=FALSE}  
+Sql = paste("SELECT [Nest_ID]
+      ,[NestIsNew]
+      ,[n]
+      ,[NestDebugger]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_MultipleNestIsNewValues]
+ORDER BY Nest_ID
+",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+
+
+```  
+`r Sql`
+
+`r nrow(df)` rows  
+
+
+## QC-S11: Multiple records with NestIsGone attribute set to 1
+
+A nest can only be gone once. This test shows nests with multiple SurveyDate.NestIsGone attributes = 1.
+
+```{r echo=FALSE}  
+Sql = paste("SELECT [Nest_ID]
+      ,[NestIsGoneCount]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_MultipleRecordsHavingNestIsGoneGT1]",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+```  
+`r Sql`
+
+`r nrow(df)` rows  
+
+
+
+## QC-S12: Possibly bad nest initiation assessments
+
+Nest initiation is defined as one or more of the following:
+
+- Two adults by the nest  
+- Incubating posture in one adult  
+- Visible egg(s) during the occupancy survey  
+
+The records below violate these conditions.
+
+```{r echo=FALSE}  
+Sql = paste("SELECT  [Year]
+      ,[Nest_ID]
+      ,[Nest_O]
+      ,[StatusCode_P]
+      ,[AdBehav1_O]
+      ,[AdBehav2_O]
+      ,[NumEggs_O]
+      ,[NumAds_O]
+      ,[NumYng]
+      --,[Date_O]
+      --,[Date_P]
+      ,[Comments_O]
+      ,[Comments_P]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_PossiblyBadNestInitiations] ORDER BY Year,Nest_ID",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+```  
+`r Sql`
+
+`r nrow(df)` rows
+
+
+
+## QC-S13: Nests marked successful but did not produce young 
+
+Successful nests must have produced young to be defined as successful. The following records violate this rule.  
+
+```{r echo=FALSE}  
+Sql = paste("SELECT [Year]
+      ,[Nest_ID]
+      ,[NumYng]
+      ,[StatusCode_P]
+  FROM [CAKN_BaldEagles].[dbo].[QC_SurveyData_SuccessfulNestsWithNoYoung]
+ORDER BY Year,Nest_ID",sep="")
+df = dbGetQuery(Connection,Sql)  
+if(nrow(df)==0){  
+    knitr::asis_output("*PASSED*. Zero records returned.  ")  
+} else{  
+    knitr::kable(df)  
+}  
+```  
+`r Sql`
+
+`r nrow(df)` rows  
+
+
+
+
+## QC Appendix: List of comments
 
 Comments can be useful in troubleshooting strange results
 
 ```{r echo=FALSE}
 
-df = GetDataFrameFromDatabase(paste("SELECT Nest_ID,Comments_O as Comment,'Occupancy' as Survey  
+Sql=paste("SELECT Nest_ID,Comments_O as Comment,'Occupancy' as Survey  
 FROM SurveyData 
 WHERE Year = ",SurveyYear," And (NOT (Comments_O IS NULL))
 UNION
 SELECT Nest_ID,Comments_P,'Productivity' 
 FROM SurveyData 
 WHERE Year = ",SurveyYear," And (NOT (Comments_P IS NULL))
-ORDER BY Nest_ID",sep=""))
+ORDER BY Nest_ID",sep="")
+df = dbGetQuery(Connection,Sql)
+if(nrow(df)==0){
+  knitr::asis_output("*PASSED*. Zero records returned.  \n")
+} else{
+  knitr::kable(df)
 
-kable(df)
+}
 
 ```
 
