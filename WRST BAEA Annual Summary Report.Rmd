@@ -4,7 +4,7 @@ author: ""
 date: ""
 output:
   html_document:
-    toc: true
+    toc: false
     toc_depth: 4
     toc_float: true
 ---
@@ -226,9 +226,13 @@ ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Pa
 
 Kyle Cutting^1^ and Scott Miller^2^
 
-^1^National Park Service, Wrangell St. Elias National Park and Preserve, 8 Richardson Hwy Mile 106, Copper Center, AK 99573
+^1^National Park Service, Wrangell St. Elias National Park and Preserve\
+8 Richardson Hwy Mile 106\
+Copper Center, AK 99573
 
-^2^National Park Service, Arctic Inventory and Monitoring Network,240 W. 5th Ave Anchorage, Alaska 99501
+^2^National Park Service, Arctic Inventory and Monitoring Network\
+240 W. 5th Ave Anchorage\
+Alaska 99501
 
 `r CurrentDate`
 
@@ -241,7 +245,7 @@ Fort Collins, Colorado
 
 `r ExecutiveSummaryText`
 
-**Keywords:** Wrangell-St. Elias National Park and Preserve, Bald Eagle, *Haliaeetus leucocephalus*, Population dynamics, monitoring
+**Keywords:** Bald Eagle, Monitoring, Population, Wrangell-St. Elias National Park and Preserve, Alaska, Abundance, Productivity, Occupancy *Haliaeetus leucocephalus*, Copper River
 
 # Objectives
 
@@ -551,7 +555,7 @@ ResultsText = paste("Over the ",LengthOfRecord," year history of the bald eagles
 ```{r echo=FALSE,label="Long-term bald eagle productivity metrics, Copper River Valley"}
 
 # Show the long-term success and productivity metrics in a table
-kable(Summary_SuccessByYearDataFrame, caption = paste("Table ",TableCounter,". Long-term bald eagle productivity metrics, Copper River Valley.",sep=""))
+kable(Summary_SuccessByYearDataFrame, caption = paste("Table ",TableCounter,". Long-term bald eagle productivity metrics, Copper River Valley. Results from 1989 - 1996 are from Kozie (1996). Later results are from Central Alaska Inventory and Monitoring surveys.",sep=""))
 
 # Increment the table counter
 TableCounter = TableCounter + 1
@@ -759,4 +763,3 @@ file.copy(From, To, overwrite = TRUE)
 <!-- ## R Markdown Report Template -->
 
 <!-- This template was generated automatically from an R Markdown script available at <https://github.com/NPS-ARCN-CAKN/WRST-BAEA-Annual-Report-R-Markdown>. The information in the report was generated from bald eagle survey data in the NPS WRST_Caribou SQL Server database (inpyugamsvm01\nuna:WRST_Caribou). -->
-
