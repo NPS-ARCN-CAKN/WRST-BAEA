@@ -1,0 +1,203 @@
+---
+title: ""
+format:
+  html:
+    toc: true
+  typst:
+    toc: false
+    number-sections: false
+    columns: 1
+---
+
+```{r setup, include=FALSE,echo=FALSE,warning=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(odbc)
+library(sf)
+
+# Set the SurveyName for the report here
+SurveyYear = 2025
+
+# Database connection
+Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "INP2300IRMADB01.nps.doi.net\\NTWK", Database = "CAKN_BaldEagles")
+
+CurrentDate = format(Sys.Date(), "%A, %B %d, %Y")
+TableCounter = 1
+FigureCounter = 1
+```
+
+# Quality Control Tests Results: Bald Eagle Survey, `r SurveyYear`
+
+## *National Park Service, Alaska Region*
+
+Scott D. Miller\
+Information Technology Specialist\
+U.S. Department of the Interior\
+National Park Service, Arctic Inventory and Monitoring Network\
+240 W. 5th Ave\
+Anchorage, AK 99501\
+
+
+`r CurrentDate`
+
+# Overview
+
+The National Park Service monitors muskox herd abundance and composition in northwestern Alaska via aerial surveys. Data collected during these surveys are stored in a database and undergo routine automated quality control tests to maximize data quality with results presented in this report.
+
+## Spatial Data
+
+A map of the survey area and muskox groups for which spatial coordinates were recorded appears in Figure `r FigureCounter`. Symbol size is representative of group size.
+
+```{r,echo=FALSE,warning=FALSE,results='hide',include=FALSE}
+
+# Get the observations having valid Latitude/Longitudes
+Sql = paste0("SELECT  [Year]
+      ,[TerritoryID]
+      ,[NestNumber]
+      ,[Nest_ID]
+      ,[RiverSegment]
+      ,[TreeSpecies]
+      ,[Date_O]
+      ,[Nest_O]
+      ,[OccupancyStatus]
+      ,[Date_P]
+      ,[StatusCode_P]
+      ,[ProductivityStatus]
+      ,[NestIsNew]
+      ,[NestIsGone]
+      ,[NestIsGoneConfirmation]
+      ,[Latitude]
+      ,[Longitude]
+  FROM [CAKN_BaldEagles].[dbo].[Dataset_Productivity]
+  WHERE Year = ",SurveyYear)
+obsdf = dbGetQuery(Connection,Sql)
+obs = st_as_sf(obsdf %>% filter(!is.na(Latitude) & Latitude > 0),coords=c("Longitude","Latitude"),crs=4326)
+
+
+# Get the parks and alaska outlines
+Parks = st_read(r'(C:\Work\GIS Common Layers\AK_Parks.geojson)')
+Parks = st_set_crs(Parks,4326)
+AK = st_read(r'(C:\Work\GIS Common Layers\Alaska.geojson)')
+AK = st_set_crs(AK,4326)
+
+```
+
+## Observations Map
+
+```{r,echo=FALSE}
+if(nrow(obs) > 0){
+  # Get bounding box of the Plots layer
+  bbox <- st_bbox(obs)
+  buffer = 0.1
+  ggplot() +
+      
+    # Alaska polygon
+    geom_sf(data = AK, fill = "white", color = "gray80", alpha = 0.5) +
+    
+    # Parks polygons
+    geom_sf(data = Parks %>% filter(PARK == 'bela' | PARK == 'cakr'), fill = "palegreen4", color = NA, alpha = 0.2) +
+
+    # Park labels
+    annotate("text", x = -164.2, y = 67.6, label = "Cape Krusenstern\nNational Monument",size = 3, color = "black", angle = 0,fontface='bold') +
+    annotate("text", x = -164.5, y = 65.8, label = "Bering Land Bridge\nNational Preserve",size = 3, color = "black", angle = 0,fontface='bold') +
+    
+    # Observations
+    geom_sf(data = obs,aes(color=StatusCode_P)) +
+    
+    # Bounding box restriction
+    coord_sf(
+      xlim = c(bbox["xmin"] - buffer, bbox["xmax"] + buffer),
+      ylim = c(bbox["ymin"] - buffer, bbox["ymax"] + buffer),
+      expand = FALSE
+    ) +
+    
+    # Theming
+    theme_minimal() +
+    theme(
+      panel.background = element_rect(fill = "lightsteelblue1"),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    ) +
+    labs(x='Longitude',y='Latitude',title='title')
+}else{
+  print("No spatial coordinates available for this survey")
+}
+
+```
+
+## Bounding Box (Including NULLs)
+
+```{r,echo=FALSE}
+knitr::kable(t(obsdf %>% summarize(
+    North = max(Latitude),
+    South = min(Latitude),
+    West = min(Longitude),
+    East = max(Longitude),
+    n=n()
+  )
+))
+
+```
+## Bounding Box (Excluding NULLs)
+
+```{r,echo=FALSE}
+knitr::kable(t(obsdf %>% summarize(
+    `North` = max(Latitude,na.rm=TRUE),
+    `South` = min(Latitude,na.rm=TRUE),
+    `West` = min(Longitude,na.rm=TRUE),
+    `East` = max(Longitude,na.rm=TRUE),
+    n=n()
+  )
+))
+
+```
+
+# QC Test Results
+
+```{r,echo=FALSE,results='asis'}
+Tests = dbGetQuery(Connection,"SELECT[Table],[TableDescription],[SelectQuery] FROM [DatabaseTableDescriptions] WHERE Left([Table],3)='QC_' ORDER BY [Table]
+")
+i = 1
+for(Table in Tests$Table){
+  cat("## ",Table)
+  cat("\n\n")
+  TestDescription = Tests[i,"TableDescription"]
+  cat("Description: ",TestDescription,"\n\n")
+  Sql = paste0("SELECT Count(*) as n FROM ",Table," WHERE Year = ",SurveyYear)
+  cat(Sql,"\n\n")
+  Result = dbGetQuery(Connection,Sql)
+  if(Result$n > 0){
+    cat("\U1F534","<span style=\"color:red;\"> **FAILED**</span>\n\n")
+  }else{
+    cat("\U2705","Passed\n\n")
+  }
+  cat("\n\n")
+  i=i+1
+}
+
+```
+
+```{r,echo=FALSE,warning=FALSE,include=FALSE}
+# This section copies the output file to a new html file titled with the survey name
+# R doesn't seem to run this chunk during a knit operation so you'll have to set the SurveyName manually (way above) and then re-run this chunk to make sure the file gets copied correctly.
+if(1==0){
+  
+  # Rename PDF
+  dst <- paste0(SurveyName," Quality Control Report.pdf")
+  src =  r'(C:\Development\ARCN Muskox R\ARCN Muskox Survey QC.pdf)'
+  cat("Source file exists: ",file.exists(src),"\n")
+  cat("Copy ",src," to ",dst,"\n")
+  file.copy(src, dst, overwrite = TRUE)
+  
+  # Rename HTML
+  dst <- paste0(SurveyName," Quality Control Report.html")
+  src =  r'(C:\Development\ARCN Muskox R\ARCN Muskox Survey QC.html)'
+  cat("Source file exists: ",file.exists(src),"\n")
+  cat("Copy ",src," to ",dst,"\n")
+  file.copy(src, dst, overwrite = TRUE)
+  
+}
+
+
+```
