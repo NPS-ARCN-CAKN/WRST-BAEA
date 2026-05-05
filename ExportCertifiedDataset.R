@@ -26,7 +26,7 @@
 library(odbc)
 
 # Build a database connection to the CAKN_BaldEagles Sql Server database
-Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "inpyugamsvm01\\nuna", Database = "CAKN_BaldEagles")
+Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "INP2300IRMADB01.nps.doi.net\NTWK", Database = "CAKN_BaldEagles")
 
 # This is the parent directory for certified dataset exports
 CertifiedDatasetDirectory = r'(J:\Monitoring\Bald_Eagles\Data\Certified Dataset for IRMA\)'
