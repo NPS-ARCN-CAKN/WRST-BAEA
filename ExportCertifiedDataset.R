@@ -66,7 +66,7 @@ if (!dir.exists(NewDatasetDirectory)) {
   cat("Directory already exists. Using ", NewDatasetDirectory, "\n")
   
   # Get the Nests dataset
-  Sql = "SELECT Nest_ID
+  Sql = "SELECT TerritoryID,NestNumber,Nest_ID
 , IsActive
 , DiscoverDate
 , FirstSightingDate
@@ -92,11 +92,10 @@ if (!dir.exists(NewDatasetDirectory)) {
 , Location.Lat AS Lat
 , Location.Long AS Lon
 , NestSub
-, TerritoryID
 , Comments
 , Convert(Date,GETDATE()) AS VersionDate
 FROM Dataset_Nests
-ORDER BY Nest_ID"
+ORDER BY TerritoryID,NestNumber"
   Nests = dbGetQuery(Connection,Sql)
   
   # Write the nests dataset to a file
