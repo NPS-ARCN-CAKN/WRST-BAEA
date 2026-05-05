@@ -113,7 +113,7 @@ FigWidth = 6
 ```{r echo=FALSE,label="SET UP REPORT PARAMETERS HERE"}
 
 # Set up report parameters here
-SurveyYear = 2024  # Set this to the desired report year. Don't set to 2016 because that survey didn't come off and the script will bomb
+SurveyYear = 2025  # Set this to the desired report year. Don't set to 2016 because that survey didn't come off and the script will bomb
 
 # ODBC connection to the BAEA monitoring SQL Server Database. 
 # Contact data manager for server and database details.
