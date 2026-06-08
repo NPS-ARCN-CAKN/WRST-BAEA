@@ -106,12 +106,11 @@ PctOccupied = signif(Summary %>% filter(Year == SurveyYear) %>% pull(`Pct. occup
 PctSuccessful = signif(Summary %>% filter(Year == SurveyYear) %>% pull(`Pct. Successful`) ,2)
 ProductivityUnknown = Summary %>% filter(Year == SurveyYear) %>% pull(`Productivity unknown`)
 
-ExecutiveSummaryText = paste("Nest occupancy surveys were flown between ",GetLongDate(OStart)," and ",GetLongDate(OEnd),", followed by productivity surveys between ",GetLongDate(PStart)," and ",GetLongDate(PEnd),". We observed ",NestsLocated," nests, of which ",Occupied," were occupied (",PctOccupied,"%). Productivity surveys revealed that ",Successful," occupied nests produced young (",PctSuccessful,"%). Productivity could not be determined for ",ProductivityUnknown," nests. Successful nests resulted in ",YoungFledged," young, an average of ",YngPerSuccessfulNest," young per successful nest. ", str_to_sentence(xfun::numbers_to_words(LostNests))," nests were lost and ", NewNests," new ",ifelse(NewNests == 1,"nest was","nests were")," discovered.",sep="")
-
+ExecutiveSummaryText = paste("Nest occupancy surveys were flown between ",GetLongDate(OStart)," and ",GetLongDate(OEnd),", followed by productivity surveys between ",GetLongDate(PStart)," and ",GetLongDate(PEnd),". We observed ",NestsLocated," nests, of which ",Occupied," were occupied (",PctOccupied,"%). Productivity surveys revealed that ",Successful," occupied nests were successful (i.e., produced young; ",PctSuccessful,"%). Successful nests produced ",YoungFledged," young, an average of ",YngPerSuccessfulNest," young per successful nest.",ifelse(NewNests == 1," One new nest was ",paste0(" ",str_to_sentence(xfun::numbers_to_words(NewNests))," new nests were"))," discovered." ,sep="")
 
 ```
 
-# Survey Summary: Bald Eagle Monitoring in Wrangell-St. Elias National Park and Preserve, `r SurveyYear`
+# Survey Summary: Bald Eagle Monitoring at Wrangell-St. Elias National Park and Preserve, `r SurveyYear`
 
 Kyle Cutting^1^ and Scott Miller^2^
 
@@ -120,7 +119,6 @@ Kyle Cutting^1^ and Scott Miller^2^
 Copper Center, AK 99573
 
 ^2^U.S. Department of the Interior\
-Enterprise Data Division\
 240 W. 5th Ave Anchorage\
 Alaska 99501
 
@@ -128,35 +126,22 @@ Alaska 99501
 
 # Abstract
 
-The Copper River drainage in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, hosts a high density of nesting Bald Eagles <i>(Haliaeetus leucocephalus)</i> and the National Park Service has identified Bald Eagles as a focal fauna species to monitor. Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities.
+The Copper River drainage in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, hosts a high density of nesting Bald Eagles <i>(Haliaeetus leucocephalus)</i>. Bald Eagles in WRST are a high profile species that are dependent upon many resources, including salmon, along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities.
 
-In `r SurveyYear` we conducted an aerial bald eagle productivity survey in and around WRST. `r ExecutiveSummaryText`
-
-**Keywords:** Bald Eagle, Monitoring, Population, Wrangell-St. Elias National Park and Preserve, Alaska, Abundance, Productivity, Occupancy *Haliaeetus leucocephalus*, Copper River
+In `r SurveyYear` we conducted an aerial bald eagle productivity survey in and around WRST as part of long-term monitoring. `r ExecutiveSummaryText`
 
 # Objectives
 
-The objectives of the monitoring efforts are to:
-
--   Document the annual changes in occupancy of bald eagles,
-
--   Document the annual changes in productivity of bald eagle nests, and
-
--   Document any changes in distribution of bald eagle nests.
+Document the annual changes in occupancy, productivity, and spatial distribution of bald eagles,
 
 # Methods
 
-The `r SurveyYear` bald eagle survey followed the same methods (Putera and Miller, 2018) that have been used since `r MinYear`. Five survey areas were defined along the Copper River and its major tributaries (Figure 1):
+The bald eagle survey is part of long-term monitoring since 2004 (Putera and Miller, 2018). Five areas covering 378 miles of riverine habitat along the Copper, Chitina, and Bremner Rivers were surveyed (Figure 1).
 
-1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (*Picea glauca*) is the predominant tree species, with balsam poplar (*Populus balsamifera*) common on the lower stretches.
+Two aerial surveys following the river corridor were conducted in 2025 - one to document territorial occupancy, and the other to document productivity. Surveys were flown using a small airplane flying at low level (<100m AGL) and low speed (<100 kph), with one experienced observer. 
 
-2.) The Middle Copper River (MCR, 179km) extends from the Chistochina River south to the confluence of the Chitina River.The MCR contains a mixture of both white spruce and balsam poplar, with poplar being slightly more common. The Copper River begins to braid along the MCR.
+We collected the following data on each nest observed: number of adults, behavior of adults, number of eggs and/or nestlings, tree species, status, and nest location. All nests still intact from the previous year’s surveys were rechecked for occupancy. During the productivity (chick) survey, all previously occupied nests from the first survey were rechecked . We define occupancy as a bird in incubation posture or two adult birds at a nest or in the nest tree. For the productivity survey, we rechecked all occupied nests from the first survey to see if chicks were present.
 
-3.) The Lower Copper River (LCR) section (188km) extends from the Chitina River south to Miles Lake. The LCR is dominated by cottonwood along the river. The vegetation also begins to exhibit coastal influences, adding several coastal species including black cottonwood (*Populus trichocarpa*), Sitka spruce (*Picea sitchensis*), and mountain hemlock (*Tsuga mertensiana*). The Copper River is wide and more braided than the upper sections, with steep canyons on either side. Nesting begins consistently later along the LCR and is probably influenced by the numerous glaciers in the area which delay snow melt and maintain the area in a winter-like state several weeks after green up has begun to occur to the north.
-
-4.) The Bremner River (45km) is surveyed from its confluence with the Copper River to the forks by Threemile Canyon, and has similar characteristics as the LCR.
-
-5.) The Chitina River (116km) is surveyed from the confluence of the Copper River to where the river becomes braided above the Tana River. White spruce dominate the trees, with cottonwood becoming scarce in the upper reaches.
 
 ```{r echo=FALSE}
 
@@ -219,32 +204,9 @@ ggplot() +
 
 ```
 
-Figure `r FigureCounter`. Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.
-
-Two aerial surveys were conducted in `r SurveyYear` - one to document territorial occupancy, and one to document productivity. Surveys were flown using a small airplane flying at low level (\<100m AGL) and low speed (\<100 kph), with one experienced observer. Flight paths followed the river's edge, with the opposite side covered on the return trip. In most cases, the relatively narrow riparian corridor allowed adequate coverage with a single pass on each side of the river. Where the corridor widened, multiple passes were made to adequately evaluate the available habitat.
-
-For all new nests located, the following information was collected:
-
-a)  Location (latitude/longitude via handheld Global Positioning System receiver),
-b)  Count of adult birds,
-c)  Behavior of adults (incubating, perched),
-d)  Number of eggs observed,
-e)  Number of nestlings,
-f)  Species of nest tree (Populus spp., Picea spp.),
-g)  Whether the nest tree was alive or dead, and
-h)  Nest status (good, poor, remnant, gone).
-
-All information except latitude/longitude was recorded on field forms. All nests still intact from the previous year's surveys were checked for occupancy during the occupancy survey. Information recorded for located nests include:
-
-a)  Count of adult birds,
-b)  Behavior of adults, and
-c)  Number of eggs or nestlings observed.
-
-During the second survey, all nest locations collected during prior surveys were checked for productivity. Territorial occupancy was defined based on a bird in the nest in incubating posture or two adult birds at a nest or in the nest tree (Postupalsky, 1974). For the productivity survey, all nests observed with an incubating bird or two adult birds at a nest during the occupancy survey were checked to determine nest outcome. Multiple passes were commonly needed to count chicks, particularly in the Lower Copper area where cottonwoods are more common, and leaves make counting chicks difficult.
-
 # Results
 
-`r ExecutiveSummaryText` Table `r TableCounter` shows overall nest success and productivity. Table `r TableCounter + 1` lists productivity metrics by river segment. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter`.
+Table `r TableCounter` shows overall nest success and productivity patterns observed in `r SurveyYear`. Table `r TableCounter + 1` lists productivity metrics by river segment. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter`.
 
 Table `r TableCounter`. Results summary, `r SurveyYear` bald eagle survey.
 
@@ -259,15 +221,26 @@ Summary_Current = Summary %>%
     `Young per successful nest` = round(`Young per successful nest`,2)
   ) %>%
   select(
-  -Year,
-  -Records,
-  -`Certified records`,
-  -`Start of occupancy surveys`,
-  -`Start of productivity surveys`,
-  -`End of occupancy surveys`,
-  -`End of productivity surveys`,
-  -`Number of productivity survey days`,
-  -`Number of occupancy survey days`
+    -`Available nests`,
+    -`Available but omitted`,
+    -`Nests not located`,
+    -`Nests not counted`,
+    -`Ending nest count`,
+    -Year,
+    -Records,
+    -`Certified records`,
+    -`Start of occupancy surveys`,
+    -`Start of productivity surveys`,
+    -`End of occupancy surveys`,
+    -`End of productivity surveys`,
+    -`Number of productivity survey days`,
+    -`Number of occupancy survey days`,
+    -`Eggs`,	
+    -`Eggs per occupied nest`,	
+    # -`Young`,
+    # -`Young per successful nest`,
+    -`Fledglings`,	
+    -`Fledglings per successful nest`	
 )
 Summary_Current_char = sapply(Summary_Current, as.character) 
 Summary_Current_char_DF = as.data.frame(Summary_Current_char)
@@ -365,7 +338,8 @@ National Park and Preserve"), size = 3, color = "gray40") +
 FigureCounter = FigureCounter + 1
 ```
 
-Figure `r FigureCounter`. Bald eagle nest dispersion and breeding pair productivity metrics in the Copper River Valley in `r SurveyYear`. Black circles represent successful nests with the size indicating number of young produced. Failed nests are shown with an X. Mean occupancy rate was `r PctOccupied`% and mean success rate was `r PctSuccessful`%.
+Figure `r FigureCounter`. Bald eagle nest distribution and productivity (circles = successful nests, X = failed nests) metrics in the Copper River Valley, `r SurveyYear`. Mean occupancy rate was `r PctOccupied`% and mean success rate was `r PctSuccessful`%. Bald eagle productivity metrics are presented by river segment in Table `r TableCounter + 1`.
+
 
 Bald eagle productivity metrics are presented by river segment in Table `r TableCounter`.
 
@@ -441,17 +415,14 @@ ggplot(df_long, aes(fill = Category, y = Percent, x = `River segment`)) +
 
 ```
 
-Figure `r FigureCounter`. Relative percent nest occupancy and success by river segment in the Copper River valley, `r SurveyYear`.
+Figure `r FigureCounter`. Percent nest occupancy and success by river segment, `r SurveyYear`.
 
-# Reference
+# Future Directions
 
-<!-- Kozie K. 1996. [Bald Eagle Productivity for Wrangell-St Elias National Park and Preserve 1993-1996](https://irma.nps.gov/DataStore/Reference/Profile/2238328). National Park Service, Wrangell - St. Elias National Park. Unpublished Report. Copper Center, Alaska -->
-
-Postupalsky, S. 1974. Raptor reproductive success: some problems with methods, criteria, and terminology, IN Raptor Research Report No. 2, Raptor Research Foundation, Vermilion, South Dakota, pp 21-31.
-
-Putera, J. and S.D. Miller. 2018. [Protocol implementation plan for bald eagle monitoring in Wrangell-St. Elias National Park & Preserve, Central Alaska Network: Version 1.0](https://irma.nps.gov/DataStore/Reference/Profile/2256539). Natural Resource Report. NPS/CAKN/NRR—2018/1752. National Park Service. Fort Collins, Colorado.
+Aerial surveys for bald eagles will occur again in the breeding season of 2026 across each river segment. We will also conduct raft-based surveys to measure foraging patterns of bald eagles across different river segments to evaluate how salmon variability and other prey items, along with habitat conditions, may affect this observed spatial pattern in eagle reproductive success. 
 
 ```{r echo=FALSE,include=FALSE}
+
 # This chunk copies the report to the J or O drive
 CurrentDirectory = "C:/Development/WRST BAEA Reports R Markdown/"
 From = paste(CurrentDirectory,"WRST BAEA Annual Summary Report Short.pdf",sep='')
