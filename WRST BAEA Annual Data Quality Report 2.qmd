@@ -27,7 +27,7 @@ TableCounter = 1
 FigureCounter = 1
 ```
 
-# Quality Control Tests Results: Bald Eagle Survey, `r SurveyYear`
+# DRAFT Quality Control Tests Results: Bald Eagle Survey, `r SurveyYear`
 
 ## *National Park Service, Alaska Region*
 
@@ -43,7 +43,7 @@ Anchorage, AK 99501\
 
 # Overview
 
-The National Park Service monitors muskox herd abundance and composition in northwestern Alaska via aerial surveys. Data collected during these surveys are stored in a database and undergo routine automated quality control tests to maximize data quality with results presented in this report.
+The National Park Service monitors bald eagle productivity and abundance in the Copper River valley, Alaska, via aerial surveys. Data collected during these surveys are stored in a master database and undergo routine automated quality control tests to maximize data quality with results presented in this report.
 
 ## Spatial Data
 
