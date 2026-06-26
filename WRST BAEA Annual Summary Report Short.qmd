@@ -366,12 +366,12 @@ CurrentSummaryByRiverSegment = SummaryByRiverSegment %>%
     `Young per successful nest` = round(`Young per successful nest`,2)
   ) %>%
   select(`River segment`,
-         `Available nests`,
-         `Available but omitted`,
+         -`Available nests`,
+         -`Available but omitted`,
          `Nests located`,
-         `Nests not located`,
-         `Productivity unknown`,
-         `Productivity known`,
+         -`Nests not located`,
+         -`Productivity unknown`,
+         -`Productivity known`,
          New,
          Lost,
          `Net gain`,
@@ -422,14 +422,15 @@ Figure `r FigureCounter`. Percent nest occupancy and success by river segment, `
 Aerial surveys for bald eagles will occur again in the breeding season of 2026 across each river segment. We will also conduct raft-based surveys to measure foraging patterns of bald eagles across different river segments to evaluate how salmon variability and other prey items, along with habitat conditions, may affect this observed spatial pattern in eagle reproductive success. 
 
 ```{r echo=FALSE,include=FALSE}
-
-# This chunk copies the report to the J or O drive
-CurrentDirectory = "C:/Development/WRST BAEA Reports R Markdown/"
-From = paste(CurrentDirectory,"WRST BAEA Annual Summary Report Short.pdf",sep='')
-To = paste(CurrentDirectory,SurveyYear," WRST BAEA Survey Summary.pdf",sep='') # ARCN
-
-# Copy the file to the Network reports directory
-file.copy(From, To, overwrite = TRUE)
+if(1==0){
+  # This chunk copies the report to the J or O drive
+  CurrentDirectory = "C:/Development/WRST BAEA Reports R Markdown/"
+  From = paste(CurrentDirectory,"WRST BAEA Annual Summary Report Short.pdf",sep='')
+  To = paste(CurrentDirectory,SurveyYear," WRST BAEA Survey Summary.pdf",sep='') # ARCN
+  
+  # Copy the file to the Network reports directory
+  file.copy(From, To, overwrite = TRUE)
+}
 
 ```
 

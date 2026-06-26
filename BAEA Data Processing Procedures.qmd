@@ -1,0 +1,275 @@
+---
+title: ""
+format:
+  typst:
+    toc: false
+    number-sections: false
+    columns: 1
+  html: default
+---
+
+```{r,include=FALSE}
+options(knitr.kable.NA = '')
+library(tidyverse)
+library(odbc)
+library(sf)
+library(ggrepel)
+
+# Connection to the bald eagles Sql Server database
+Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "INP2300IRMADB01.nps.doi.net\\NTWK", Database = "CAKN_BaldEagles")
+
+```
+# Set up script parameters
+
+Set up script parameters here. You must create the survey directory and add the path below. It's fastest to create the directories and files locally and copy them to the BAEA directory on the J drive at `J:\Monitoring\Bald_Eagles\Data\`
+
+```{r}
+# The current survey directory where deliverables should be sent or found
+#DeliverablesDirectory = r'(J:\Monitoring\Bald_Eagles\Data\)' # Network (slow, but this is where all critical files should be stored. Copy to here from local when done)
+DeliverablesDirectory = r'(C:\Work\VitalSigns\CAKN Bald Eagles\Data\2026 WRST BAEA Survey\)' # Local
+cat("The survey directory is ",DeliverablesDirectory,"\n")
+
+```
+
+
+# Set up the survey directory and file structure
+
+```{r}
+# Pre-survey: Directory where pre-survey files should be sent. These are active nest inventory, gpx, kml, and map files, etc. needed for the survey.
+#PreSurveyDirectory = paste0(DeliverablesDirectory,'Pre-survey files/')
+# Create the pre-survey directory if it does not exist
+# if(dir.exists(PreSurveyDirectory) == FALSE){
+#   cat(PreSurveyDirectory," does not exist. Creating.")
+#   dir.create(PreSurveyDirectory)
+# } else {
+#   cat("The Pre-survey files directory is ",PreSurveyDirectory,"\n")
+# }
+# 
+# # Post survey: Directory where post-survey raw data files should be sent. These are pre-survey files, but populated with raw, unprocessed data
+# PostSurveyDirectory = paste0(DeliverablesDirectory,'Post survey files/')
+# # Create the Post-survey directory if it does not exist
+# if(dir.exists(PostSurveyDirectory) == FALSE){
+#   cat(PostSurveyDirectory," does not exist. Creating.")
+#   dir.create(PostSurveyDirectory)
+# } else {
+#   cat("The Post survey files directory is ",PostSurveyDirectory,"\n")
+# }
+```
+
+
+# Pre-Survey
+
+## Generate Deliverable BE-13: Pre-survey Nests Inventory
+
+The purpose of this section is to generate a CSV file of active nests that should be surveyed. The chunk below queries the bald eagle database view (query) called `ActiveNestsForDatasheets` and writes the active nests data to a deliverable in the `\\Pre-survey files` directory.
+
+```{r,echo=FALSE}
+# Build a query
+sql = paste0("SELECT [RiverSegment]
+,[Nest_ID]
+,[NESTID]
+,'' As NEW
+,[GONE]
+,[NOT FOUND]
+,[NOT COUNTED]  
+,[TREE SPP]
+,[LIVE/DEAD]
+,[CONDITION]
+,[NO. ADULTS]
+,[AD1 BEHAV]
+,[AD2 BEHAV]
+,[OCCUPIED?]
+,[EGGS]
+,[YOUNG]
+,[STAGE]
+,[ADULTS]
+,Convert(varchar(1000),[NESTCOMMENT]) as [NEST COMMENT]
+,Convert(varchar(1000),[LAST COMMENT]) as [LAST COMMENT]
+,[Longitude]
+,[Latitude]
+FROM [CAKN_BaldEagles].[dbo].[ActiveNestsForDatasheets]
+ORDER BY RiverSegment,Territory,NestNumber")
+
+# Submit the query to the database
+Nests = dbGetQuery(Connection,sql)
+# glimpse(Nests)
+# Nests
+
+# Make a list of things to check on during the survey
+# Nests %>% summarize(
+#   `Missing tree species` = sum(is.na(`TREE SPP`)),
+#   `Missing tree status` = sum(is.na(`LIVE/DEAD`))  
+# )
+
+# Write the active nests file to the pre-survey directory
+BE13File = paste0(DeliverablesDirectory,'/BE-13 ',year(Sys.Date())," Pre-Survey Bald Eagle Active Nests Inventory.csv")
+cat("Pre-survey file written to ",BE13File,'\n')
+write.csv(Nests,BE13File,quote = TRUE,na='',row.names = FALSE)
+
+```
+
+## Generate Deliverable BE-14: Survey GPX file
+
+```{r}
+# Write the active nests to GPX file
+NestsSF = st_as_sf(Nests %>% select(
+  name = Nest_ID,
+  desc = `TREE SPP`,
+  Longitude,
+  Latitude
+),crs=4326,coords=c('Longitude','Latitude'))
+BE14File = paste0(DeliverablesDirectory,'/BE-14 ',year(Sys.Date())," Bald Eagle Survey Active Nests.gpx")
+st_write(NestsSF, BE14File, driver = "GPX", layer = "waypoints",append = FALSE)  
+cat("Deliverable BE-14 GPX file written to ",BE14File,'\n')                 
+#.rs.restartR()
+
+```
+
+## Generate Deliverable BE-14: Survey KML file
+
+```{r}
+# Write the active nests to KML file
+NestsSF = st_as_sf(Nests %>% select(
+  Nest_ID,
+  RiverSegment,
+  `TREE SPP`,
+  `NEST COMMENT`,
+  `LAST COMMENT`,
+  Longitude,
+  Latitude
+),crs=4326,coords=c('Longitude','Latitude'))
+BE14FileKML = paste0(DeliverablesDirectory,'/BE-14 ',year(Sys.Date())," Bald Eagle Survey Active Nests.kml")
+st_write(NestsSF, BE14FileKML, driver = "KML", layer = "waypoints",append = FALSE)  
+cat("Deliverable BE-14 KML file written to ",BE14FileKML,'\n')                 
+#.rs.restartR()
+
+```
+
+
+## Generate Deliverable BE-14: Survey map images
+
+```{r}
+# Load spatial layers from either Data Store (slow, but reliable for anyone anywhere) or local directory
+if(1==1){
+  # Load spatial files locally
+  ShpPath = "C:/Work/GIS Common Layers/"
+  Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
+  AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
+  Rivers1M = read_sf(paste0(ShpPath,"Alaska_Rivers_1M.geojson.geojson"))
+  Rivers = read_sf(paste0(ShpPath,"AK_Rivers.geojson")) 
+}else{
+  # Load spatial files from Data Store
+  Parks = st_read('https://irma.nps.gov/DataStore/DownloadFile/704836')
+  AK = st_read('https://irma.nps.gov/DataStore/DownloadFile/746052')
+  Rivers1M = read_sf('https://irma.nps.gov/DataStore/DownloadFile/758201') 
+}
+```
+
+```{r,echo=FALSE}
+
+# Function to get an expanded bounding box. Bounding box must be a data frame with columns "xmin" "ymin" "xmax" "ymax"
+GetExpandedBoundingBox <- function(BoundingBox, Pct = 0.05) {
+  w <- BoundingBox$xmax - BoundingBox$xmin
+  h <- BoundingBox$ymax - BoundingBox$ymin
+  
+  NewBox = data.frame(
+    xmin = BoundingBox$xmin - w * Pct,
+    xmax = BoundingBox$xmax + w * Pct,
+    ymin = BoundingBox$ymin - h * Pct,
+    ymax = BoundingBox$ymax + h * Pct
+  )
+  return(NewBox)
+}
+
+# Function to plot nests by river segment
+GetMap = function(RSegment){
+  
+  # Isolate the nest locations by the requested river segment
+  Sites = Nests %>% filter(RiverSegment == RSegment)
+  
+  # Build a bounding box to zoom the map appropriately
+  bboxdf = as.data.frame(Sites) %>% summarize(xmin=min(Longitude,na.rm=TRUE),ymin=min(Latitude,na.rm=TRUE),xmax=max(Longitude,na.rm=TRUE),ymax=max(Latitude,na.rm=TRUE))
+  bbox = GetExpandedBoundingBox(bboxdf,0.1) # Expands the bounding box by a percentage
+
+  # Build the map
+  map = ggplot() +
+    
+    # Blue rectangle to make the background of the map blue
+    geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
+    
+    # Alaska outline
+    geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
+    
+    # Park boundary
+    geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
+  
+      # Rivers
+    geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +  
+    
+    # Nests
+    geom_point(data=Sites, aes(x = Longitude, y = Latitude,colour=`TREE SPP`),size=2) +
+    geom_text_repel(data=Sites, aes(x = Longitude, y = Latitude,label = Nest_ID),size=3) +
+    scale_color_manual(values = c("POPLAR" = "black", "SPRUCE" = "darkgreen"),na.value = 'red') +
+    #scale_shape_manual(values = c(4,19),na.value = 19) + # 4 = X, 19 = dot
+    
+    # Zoom to bounding box
+    coord_sf(
+      xlim = c(as.numeric(bbox["xmin"]), as.numeric(bbox["xmax"])),
+      ylim = c(as.numeric(bbox["ymin"]), as.numeric(bbox["ymax"])),
+      expand = FALSE
+    )
+    labs(title = RSegment) +
+    xlab('Longitude') +
+    ylab('Latitude') +
+
+    # Minimal theme
+    theme_minimal()
+  
+    return(map)
+}
+#Test: 
+#GetMap('Upper Copper')
+
+# Loop the river segments and export maps
+if(1==1){
+  for(RSegment in Nests %>% distinct(RiverSegment) %>% pull(RiverSegment)){
+    Map = GetMap(RSegment)
+    cat("Building a map for river segment: ",RSegment,"\n")
+    print(Map)
+    BE14FilePNG = paste0(DeliverablesDirectory,'/BE-14 ',year(Sys.Date())," Bald Eagle Survey Active Nests Map - ",RSegment,".png")
+    ggsave(BE14FilePNG, plot = Map, width = 7.5, height = 10, dpi = 300)
+    cat("Deliverable BE-14 PNG map file written to ",BE14FilePNG,'\n')  
+  }
+}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

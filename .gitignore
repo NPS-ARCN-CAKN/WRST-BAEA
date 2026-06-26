@@ -6,6 +6,8 @@
 .RDataTmp
 # User-specific files
 .Ruserdata
+*.rmd
+*.Rmd
 *.html
 z*
 WRST-BAEA-Annual-Summary-Report.html

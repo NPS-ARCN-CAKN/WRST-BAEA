@@ -119,7 +119,7 @@ NumberOfSurveys = sqldf('SELECT Count(DISTINCT Year) as NumberOfSurveys FROM Sum
 # We'll need just this year's data in a separated data frame from all the historical data.
 # Filter on the summary data frame on the current year and then remove the Year column
 Summary_SuccessByYearDataFrame_Current = Summary_SuccessByYearDataFrame %>% filter(Year == SurveyYear)
-  Summary_SuccessByYearDataFrame[Summary_SuccessByYearDataFrame$Year == SurveyYear,-1]
+  # Summary_SuccessByYearDataFrame[Summary_SuccessByYearDataFrame$Year == SurveyYear,-1]
 
 # Build some summary statistics to report in the markdown
 NestsLocated = Summary_SuccessByYearDataFrame_Current$`Nests located`
@@ -140,6 +140,8 @@ ExecutiveSummaryText = paste("The Copper River in Wrangell-St. Elias National Pa
 ```
 
 # Survey Summary: Bald Eagles Survey in Wrangell-St. Elias National Park and Preserve, `r SurveyYear`
+
+DRAFT - NOT FOR DISTRIBUTION
 
 Kyle Cutting^1^ and Scott Miller^2^
 
@@ -307,10 +309,10 @@ FigureCaption = paste("Figure ",FigureCounter,". Bald eagle nest dispersion and 
 
 # Get the spatial locations of successful and failed nests for a map
 Sql = paste("SELECT   
---Nest_ID
---, RiverSegment
-[Lat-NAD83] AS Latitude
-, [Lon-NAD83] AS Longitude
+Nest_ID
+, RiverSegment
+,Latitude
+, Longitude
 , NumYng
 ,CASE 
   WHEN StatusCode_P = 'IF' THEN 'Failed' 
@@ -318,11 +320,11 @@ Sql = paste("SELECT
   ELSE NULL 
 END AS Status
 , StatusCode_P
---, Nest_O
+, Nest_O
 FROM Dataset_Productivity
 WHERE (Year = ",SurveyYear,") 
-AND ([Lat-NAD83] IS NOT NULL) -- Avoid missing spatial coords
-AND ([Lat-NAD83] > 50) -- Avoid Lat/Lon records of 0/0
+AND ([Latitude] IS NOT NULL) -- Avoid missing spatial coords
+AND ([Latitude] > 50) -- Avoid Lat/Lon records of 0/0
 AND (StatusCode_P IN ('S', 'IF')) -- Successful or faild, ignore not found and not counted records
 ",sep='')
 
