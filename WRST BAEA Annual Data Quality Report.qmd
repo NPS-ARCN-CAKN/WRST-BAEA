@@ -1,12 +1,13 @@
 ---
 title: ""
 format:
-  html:
-    toc: true
   typst:
     toc: false
     number-sections: false
     columns: 1
+  html:
+    toc: true
+
 ---
 
 ```{r setup, include=FALSE,echo=FALSE,warning=FALSE}
@@ -16,38 +17,59 @@ library(tidyverse)
 library(odbc)
 library(sf)
 
-# Set the SurveyName for the report here
+# Set the survey year for the report here
 SurveyYear = 2025
 
 # Database connection
 Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "INP2300IRMADB01.nps.doi.net\\NTWK", Database = "CAKN_BaldEagles")
 
-CurrentDate = format(Sys.Date(), "%A, %B %d, %Y")
+CurrentDate = format(Sys.Date(), "%B %d, %Y")
 TableCounter = 1
 FigureCounter = 1
+
 ```
 
-# DRAFT Quality Control Tests Results: Bald Eagle Survey, `r SurveyYear`
-
-## *National Park Service, Alaska Region*
-
-Scott D. Miller\
-Information Technology Specialist\
-U.S. Department of the Interior\
-National Park Service, Arctic Inventory and Monitoring Network\
-240 W. 5th Ave\
-Anchorage, AK 99501\
+# Quality Control Tests Results: Bald Eagle Survey, `r SurveyYear`   
+## *National Park Service*   
+### Central Alaska Inventory and Monitoring Network      
+   
+   
+   
+   
+Scott D. Miller   
+Information Technology Specialist   
+U.S. Department of the Interior   
+240 W. 5th Ave   
+Anchorage, AK 99501   
 
 
 `r CurrentDate`
 
 # Overview
 
-The National Park Service monitors bald eagle productivity and abundance in the Copper River valley, Alaska, via aerial surveys. Data collected during these surveys are stored in a master database and undergo routine automated quality control tests to maximize data quality with results presented in this report.
+The National Park Service monitors bald eagle productivity and abundance in the Copper River valley, Alaska, via aerial surveys. Information about the monitoring can be found in the [NPS Data Store](https://irma.nps.gov/DataStore/Reference/Profile/2216071). Data collected during occupance and productivity surveys are stored in a master database and undergo routine automated quality control tests to maximize data quality. Results of these tests are presented in this report.
 
 ## Spatial Data
 
 A map of the survey area and muskox groups for which spatial coordinates were recorded appears in Figure `r FigureCounter`. Symbol size is representative of group size.
+
+```{r,echo=FALSE,warning=FALSE,results='hide',include=FALSE}
+# Load spatial layers from either Data Store (slow, but reliable for anyone anywhere) or local directory
+if(1==1){
+  # Load spatial files locally
+  ShpPath = "C:/Work/GIS Common Layers/"
+  Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
+  AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
+  Rivers = read_sf(paste0(ShpPath,"Alaska_Rivers_1M.geojson.geojson"))
+  Roads = read_sf(paste0(ShpPath,"DOT_RoadSystem_091318/","DOT_RoadSystem_091318.shp"))
+}else{
+  # Load spatial files from Data Store
+  Parks = st_read('https://irma.nps.gov/DataStore/DownloadFile/704836')
+  AK = st_read('https://irma.nps.gov/DataStore/DownloadFile/746052')
+  Rivers = read_sf('https://irma.nps.gov/DataStore/DownloadFile/758201') 
+}
+
+```
 
 ```{r,echo=FALSE,warning=FALSE,results='hide',include=FALSE}
 
@@ -64,6 +86,7 @@ Sql = paste0("SELECT  [Year]
       ,[Date_P]
       ,[StatusCode_P]
       ,[ProductivityStatus]
+      ,Productivity -- The actual classification field for productivity
       ,[NestIsNew]
       ,[NestIsGone]
       ,[NestIsGoneConfirmation]
@@ -73,14 +96,7 @@ Sql = paste0("SELECT  [Year]
   WHERE Year = ",SurveyYear)
 obsdf = dbGetQuery(Connection,Sql)
 obs = st_as_sf(obsdf %>% filter(!is.na(Latitude) & Latitude > 0),coords=c("Longitude","Latitude"),crs=4326)
-
-
-# Get the parks and alaska outlines
-Parks = st_read(r'(C:\Work\GIS Common Layers\AK_Parks.geojson)')
-Parks = st_set_crs(Parks,4326)
-AK = st_read(r'(C:\Work\GIS Common Layers\Alaska.geojson)')
-AK = st_set_crs(AK,4326)
-
+obs %>% distinct(Productivity)
 ```
 
 ## Observations Map
@@ -93,7 +109,10 @@ if(nrow(obs) > 0){
   ggplot() +
       
     # Alaska polygon
-    geom_sf(data = AK, fill = "white", color = "gray80", alpha = 0.5) +
+    #geom_sf(data = AK, fill = "white", color = "gray80", alpha = 0.5) +
+    geom_sf(data=Parks,fill='gray80') +
+    geom_sf(data = Rivers, fill = "lightsteelblue", color = 'lightsteelblue',alpha=0.4) +
+    geom_sf(data = Roads, fill = "gray50", color = 'gray50',alpha=0.4) +
     
     # Parks polygons
     geom_sf(data = Parks %>% filter(PARK == 'bela' | PARK == 'cakr'), fill = "palegreen4", color = NA, alpha = 0.2) +
@@ -103,43 +122,31 @@ if(nrow(obs) > 0){
     annotate("text", x = -164.5, y = 65.8, label = "Bering Land Bridge\nNational Preserve",size = 3, color = "black", angle = 0,fontface='bold') +
     
     # Observations
-    geom_sf(data = obs,aes(color=StatusCode_P)) +
-    
+    geom_sf(data = obs,aes(color=Productivity,size=Productivity,shape=Productivity)) +
+    scale_color_manual(values = c('Not initiated' = 'gray10','Successful' = 'green','Failed' = 'red','Productivity unknown' ='orange','Not found or not checked' = 'gray70')) +
+    scale_shape_manual(values = c('Not initiated' = 1,'Successful' = 16,'Failed' = 16,'Productivity unknown' = 10,'Not found or not checked' = 10)) +
+    scale_size_manual(values = c('Not initiated' = 1,'Successful' = 3,'Failed' = 3,'Productivity unknown' = 1,'Not found or not checked' = 1)) +
+
     # Bounding box restriction
     coord_sf(
-      xlim = c(bbox["xmin"] - buffer, bbox["xmax"] + buffer),
+      xlim = c(bbox["xmin"] - 1, bbox["xmax"] + 1),
       ylim = c(bbox["ymin"] - buffer, bbox["ymax"] + buffer),
       expand = FALSE
     ) +
     
     # Theming
     theme_minimal() +
-    theme(
-      panel.background = element_rect(fill = "lightsteelblue1"),
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank()
-    ) +
-    labs(x='Longitude',y='Latitude',title='title')
+    labs(x='Longitude',y='Latitude',title='Bald Eagle Observations')  +
+    theme(axis.text.x = element_text(angle = 90,hjust = 1,vjust = 0.5))
+  
 }else{
   print("No spatial coordinates available for this survey")
 }
 
 ```
 
-## Bounding Box (Including NULLs)
 
-```{r,echo=FALSE}
-knitr::kable(t(obsdf %>% summarize(
-    North = max(Latitude),
-    South = min(Latitude),
-    West = min(Longitude),
-    East = max(Longitude),
-    n=n()
-  )
-))
-
-```
-## Bounding Box (Excluding NULLs)
+## Bounding Box
 
 ```{r,echo=FALSE}
 knitr::kable(t(obsdf %>% summarize(
@@ -153,30 +160,110 @@ knitr::kable(t(obsdf %>% summarize(
 
 ```
 
-# QC Test Results
+# Quality Control Test Results
+
+# Nests
 
 ```{r,echo=FALSE,results='asis'}
-Tests = dbGetQuery(Connection,"SELECT[Table],[TableDescription],[SelectQuery] 
+Tests = dbGetQuery(Connection,"SELECT[Table],QC_Severity,[TableDescription],[SelectQuery] 
    FROM [DatabaseTableDescriptions] 
-   WHERE Left([Table],13)='QC_SurveyData' 
-   ORDER BY [Table]
-")
+   WHERE Left([Table],8)='QC_Nests' 
+   ORDER BY [Table]")
 i = 1
 for(Table in Tests$Table){
-  cat("## ",Table)
-  cat("\n\n")
-  TestDescription = Tests[i,"TableDescription"]
-  cat("Description: ",TestDescription,"\n\n")
-  Sql = paste0("SELECT Count(*) as n FROM ",Table," WHERE Year = ",SurveyYear)
-  cat(Sql,"\n\n")
-  Result = dbGetQuery(Connection,Sql)
-  if(Result$n > 0){
-    cat("\U1F534","<span style=\"color:red;\"> **FAILED**</span>\n\n")
-  }else{
-    cat("\U2705","Passed\n\n")
-  }
-  cat("\n\n")
-  i=i+1
+  tryCatch(
+    {
+        # Run the QC Test
+        cat("## ",Table)
+        cat("\n\n")
+        TestDescription = Tests[i,"TableDescription"]
+        cat("Description: ",TestDescription,"\n\n")
+        Sql = paste0("SELECT Count(*) as n FROM ",Table)
+        cat("SELECT * FROM \\[",Table,"\\] WHERE Year = ",SurveyYear,sep="")
+        cat("\n\n")
+        Result = dbGetQuery(Connection,Sql)
+        
+        # Present results
+        if(Result$n > 0){
+          if(Result$QC_Severity == 'Failure'){
+            cat("\U1F621","<span style=\"color:red;\"> **FAILED**</span>\n\n")
+          } else {
+            cat("\U1F61E","<span style=\"color:orange;\"> **WARNING**</span>\n\n")
+          }
+          
+        }else{
+          cat("\U2705","<span style=\"color:green;\"> **Passed**</span>\n\n")
+        }
+        
+        cat("\n\n")
+        i=i+1
+        
+    },
+    warning = function(w) {
+      cat("\U1F7E1 <span style=\"color:yellow;\">Warning</span>: This quality control procedure does not apply to an annual survey.") #, conditionMessage(w)
+      cat("\n\n")
+    },
+    error = function(e) {
+      cat("\U1F7E1 <span style=\"color:yellow;\">Warning</span>: There was an error or this quality control procedure does not apply to an annual survey.") #, conditionMessage(e)
+      cat("\n\n")
+    },
+    finally = {
+      #message("Finished attempt.")
+    })
+
+}
+
+```
+
+# `r SurveyYear` Survey Data
+
+```{r,echo=FALSE,results='asis'}
+Tests = dbGetQuery(Connection,"SELECT[Table],QC_Severity,[TableDescription],[SelectQuery] 
+   FROM [DatabaseTableDescriptions] 
+   WHERE Left([Table],13)='QC_SurveyData' 
+   ORDER BY [Table]")
+i = 1
+for(Table in Tests$Table){
+  tryCatch(
+    {
+        # Run the QC Test
+        cat("## ",Table)
+        cat("\n\n")
+        TestDescription = Tests[i,"TableDescription"]
+        cat("Description: ",TestDescription,"\n\n")
+        Sql = paste0("SELECT Count(*) as n FROM ",Table," WHERE Year = ",SurveyYear)
+        cat("SELECT * FROM \\[",Table,"\\] WHERE Year = ",SurveyYear,sep="")
+        cat("\n\n")
+        Result = dbGetQuery(Connection,Sql)
+        
+        # Present results
+        if(Result$n > 0){
+          if(Result$QC_Severity == 'Failure'){
+            cat("\U1F621","<span style=\"color:red;\"> **FAILED**</span>\n\n")
+          } else {
+            cat("\U1F61E","<span style=\"color:orange;\"> **WARNING**</span>\n\n")
+          }
+          
+        }else{
+          cat("\U2705","<span style=\"color:green;\"> **Passed**</span>\n\n")
+        }
+        
+        cat("\n\n")
+        i=i+1
+        
+    },
+    warning = function(w) {
+      cat("\U1F7E1 <span style=\"color:yellow;\">Warning</span>: This quality control procedure does not apply to an annual survey.") #, conditionMessage(w)
+      cat("\n\n")
+    },
+    error = function(e) {
+      cat("\U1F7E1 <span style=\"color:yellow;\">Warning</span>: There was an error or this quality control procedure does not apply to an annual survey.") #, conditionMessage(e)
+      cat("\n\n")
+    },
+    finally = {
+      #message("Finished attempt.")
+    })
+
 }
 
 ```
