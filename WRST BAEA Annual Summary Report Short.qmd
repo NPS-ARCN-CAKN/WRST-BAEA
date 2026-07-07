@@ -40,6 +40,23 @@ GetLongDate <- function(Date) {
 TableCounter = 1
 FigureCounter = 1
 
+# Load spatial layers from either Data Store (slow, but reliable for anyone anywhere) or local directory
+if(1==1){
+  # Load spatial files locally
+  ShpPath = "C:/Work/GIS Common Layers/"
+  Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
+  AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
+  Rivers = read_sf(paste0(ShpPath,"Alaska_Rivers_1M.geojson.geojson"))
+  Roads = read_sf(paste0(ShpPath,"DOT_RoadSystem_091318/","DOT_RoadSystem_091318.shp"))
+  Lakes = read_sf(paste0(ShpPath,"AK_Lakes/mv_major_lake_py.shp"))
+}else{
+  # Load spatial files from Data Store
+  Parks = st_read('https://irma.nps.gov/DataStore/DownloadFile/704836')
+  AK = st_read('https://irma.nps.gov/DataStore/DownloadFile/746052')
+  Rivers = read_sf('https://irma.nps.gov/DataStore/DownloadFile/758201') 
+}
+#ggplot() + geom_sf(data=Lakes)
+
 ```
 
 ```{r echo=FALSE, label="Survey dates"}
@@ -126,7 +143,7 @@ Alaska 99501
 
 # Abstract
 
-The Copper River drainage in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, hosts a high density of nesting Bald Eagles <i>(Haliaeetus leucocephalus)</i>. Bald Eagles in WRST are a high profile species that are dependent upon many resources, including salmon, along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities.
+The Copper River drainage in Wrangell-St. Elias National Park and Preserve (WRST), Alaska, hosts a high density of nesting Bald Eagles *(Haliaeetus leucocephalus)*. Bald Eagles in WRST are a high profile species that are dependent upon many resources, including salmon, along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities.
 
 In `r SurveyYear` we conducted an aerial bald eagle productivity survey in and around WRST as part of long-term monitoring. `r ExecutiveSummaryText`
 
@@ -145,44 +162,25 @@ We collected the following data on each nest observed: number of adults, behavio
 
 ```{r echo=FALSE}
 
-# Load spatial layers from either Data Store (slow, but reliable for anyone anywhere) or local directory
-if(1==1){
-  # Load spatial files locally
-  ShpPath = "C:/Work/GIS Common Layers/"
-  Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
-  AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
-  Rivers = read_sf(paste0(ShpPath,"Alaska_Rivers_1M.geojson.geojson"))
-}else{
-  # Load spatial files from Data Store
-  Parks = st_read('https://irma.nps.gov/DataStore/DownloadFile/704836')
-  AK = st_read('https://irma.nps.gov/DataStore/DownloadFile/746052')
-  Rivers = read_sf('https://irma.nps.gov/DataStore/DownloadFile/758201') 
-}
-
-
-
 # Build a map of the survey area showing park boundaries, copper river and tributaries, etc.
 ggplot() +
   
   # Blue rectangle to make the background of the map blue
   geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
   
-  # Alaska outline
+  # Contextual layers
   geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
-  
-  # Park boundary
   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
-  
-  # Rivers
   geom_sf(data=Rivers %>% filter(TYPE != 'I'),mapping=aes(),color='steelblue3',fill='steelblue3') +
+  geom_sf(data = Roads, fill = "gray50", color = 'gray50',alpha=0.4) +
+  geom_sf(data=Lakes,mapping=aes(),color='steelblue3',fill='steelblue3') +
   
   # Set the map limits, zoom into the BAEA monitoring area
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
   xlab('Longitude') +
-  ylab('Latitude')+
+  ylab('Latitude') +
   
-  # Minimal theme
-  theme_minimal() +
+
   
   # WRST text Label
   geom_text(aes(x = -144.25, y = 61.8, label = "Wrangell - St. Elias National\nPark and Preserve"), size = 4, color = "gray40", fontface = "bold") +
@@ -200,7 +198,14 @@ ggplot() +
   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 4, color = "black") +
   
   # Bremner River label
-  geom_text(aes(x = -143.8, y = 60.95, label = "Bremner River"), size = 4, color = "black")
+  geom_text(aes(x = -143.8, y = 60.95, label = "Bremner River"), size = 4, color = "black") +
+  
+  # Minimal theme
+  theme_minimal() +
+  
+  # Legend position
+  theme(legend.position = "bottom")
+
 
 ```
 
@@ -220,7 +225,19 @@ Summary_Current = Summary %>%
     `Pct. Successful` = round(`Pct. Successful`,1),
     `Young per successful nest` = round(`Young per successful nest`,2)
   ) %>%
-  select(
+  select(    
+    `Nests located`,
+    `Occupied`,
+    `Successful`,
+    `Productivity unknown`,
+    `New`,
+    `Lost`,
+    
+    `Pct. occupied`,
+    `Pct. Successful`,
+    `Young`,
+    `Young per successful nest`,
+    -`Net gain`,
     -`Available nests`,
     -`Available but omitted`,
     -`Nests not located`,
@@ -240,7 +257,9 @@ Summary_Current = Summary %>%
     # -`Young`,
     # -`Young per successful nest`,
     -`Fledglings`,	
-    -`Fledglings per successful nest`	
+    -`Fledglings per successful nest`,
+    -`Productivity known`,
+
 )
 Summary_Current_char = sapply(Summary_Current, as.character) 
 Summary_Current_char_DF = as.data.frame(Summary_Current_char)
@@ -260,22 +279,21 @@ TableCounter = TableCounter + 1
 Sql = paste0("SELECT   
 Nest_ID
 , RiverSegment
-,Latitude AS Latitude
+, Latitude AS Latitude
 , Longitude AS Longitude
 , NumYng
-,CASE 
-  WHEN StatusCode_P = 'IF' THEN 'Failed' 
-  WHEN StatusCode_P = 'S' THEN 'Succeeded' 
-  ELSE NULL 
-END AS Status
+, Productivity
+, CASE
+	WHEN NOT Productivity IN ('Successful','Failed') THEN 'Not initated, not found, or productivity unknown'
+	ELSE Productivity
+END As Status
 , StatusCode_P
 , Nest_O
 FROM Dataset_Productivity
 WHERE (Year = ",SurveyYear,") 
 AND (Latitude IS NOT NULL) -- Avoid missing spatial coords
 AND (Latitude > 50) -- Avoid Lat/Lon records of 0/0
-AND (StatusCode_P IN ('S', 'IF')) -- Successful or failed, ignore not found and not counted records
-")
+--AND (StatusCode_P IN ('S', 'IF')) -- Successful or failed, ignore not found and not counted records")
 
 # Get data frame from query
 Nests = dbGetQuery(Connection,Sql)
@@ -289,32 +307,32 @@ ggplot() +
   
   # Alaska outline
   geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
-  
-  # Park boundary
   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
-
-    # Rivers
-  geom_sf(data=Rivers %>% filter(TYPE != 'I'),mapping=aes(),color='steelblue3',fill='steelblue3') +  
-  
+  geom_sf(data=Rivers %>% filter(TYPE != 'I'),mapping=aes(),color='steelblue3',fill='steelblue3') +
+  geom_sf(data = Roads, fill = "gray50", color = 'gray50',alpha=0.4) +
+    
   # Failed nests
   # Consider carefully whether to publish nest locations, or not
-  geom_point(data=Nests, aes(x = Longitude, y = Latitude,colour=Status,shape=Status),size=2) +
-  scale_color_manual(values = c("Succeeded" = "black", "Failed" = "red")) +
-  scale_shape_manual(values = c(4,19)) + # 4 = X, 19 = dot
+  # geom_point(data=Nests, aes(x = Longitude, y = Latitude,colour=Productivity,shape=Productivity,size=Productivity)) +
+  # scale_color_manual(values = c('Not initiated' = 'gray70','Successful' = 'green','Failed' = 'red','Productivity unknown' ='orange','Not found or not checked' = 'gray70')) +
+  # scale_shape_manual(values = c('Not initiated' = 16,'Successful' = 16,'Failed' = 16,'Productivity unknown' = 16,'Not found or not checked' = 16)) +
+  # scale_size_manual(values = c('Not initiated' = 1,'Successful' = 3,'Failed' = 2,'Productivity unknown' = 1,'Not found or not checked' = 1)) +
+  
+  geom_point(data=Nests, aes(x = Longitude, y = Latitude,colour=Status,shape=Status,size=Status)) +
+  scale_color_manual(values = c('Not initated, not found, or productivity unknown' = 'black','Successful' = 'darkgreen','Failed' = 'red')) +
+  scale_shape_manual(values = c('Not initated, not found, or productivity unknown' = 16,'Successful' = 16,'Failed' = 16)) +
+  scale_size_manual(values = c('Not initated, not found, or productivity unknown' = 1,'Successful' = 3,'Failed' = 2)) +
   
   # Productive nests, increasing size with productivity
-  geom_point(data=subset(Nests,Status=="Succeeded"), aes(x = Longitude, y = Latitude, size=factor(NumYng)),color="black") +
-  # Override the size attributes assigned by geom_point. 'values' is size of symbol.
-  scale_size_manual(name="Young produced",values = c(2,5),breaks = c(1,2), labels = c("1","2")) + 
+  # geom_point(data=subset(Nests,Productivity=="Successful"), aes(x = Longitude, y = Latitude, size=factor(NumYng)),color="black") +
+  # # Override the size attributes assigned by geom_point. 'values' is size of symbol.
+  # scale_size_manual(name="Young produced",values = c(2,5),breaks = c(1,2), labels = c("1","2")) + 
   
   # Set the map limits
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
   xlab('Longitude') +
   ylab('Latitude')+
-  
-  # Minimal theme
-  theme_minimal() +
-  
+
   # WRST Label
   geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
 National Park and Preserve"), size = 3, color = "gray40") +
@@ -332,26 +350,81 @@ National Park and Preserve"), size = 3, color = "gray40") +
   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
   
   # Bremner River label
-  geom_text(aes(x = -143.8, y = 60.95, label = "Bremner River"), size = 3, color = "dodgerblue4")
+  geom_text(aes(x = -143.8, y = 60.95, label = "Bremner River"), size = 3, color = "dodgerblue4") +
+  
+  # Minimal theme
+  theme_minimal() +
+  
+  # Legend position
+  theme(legend.position = "bottom")
 
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
 ```
 
-Figure `r FigureCounter`. Bald eagle nest distribution and productivity (circles = successful nests, X = failed nests) metrics in the Copper River Valley, `r SurveyYear`. Mean occupancy rate was `r PctOccupied`% and mean success rate was `r PctSuccessful`%. Bald eagle productivity metrics are presented by river segment in Table `r TableCounter + 1`.
+Figure `r FigureCounter`. Bald eagle nest distribution and productivity in the Copper River Valley, `r SurveyYear`. Mean occupancy rate was `r PctOccupied`% and mean success rate was `r PctSuccessful`%. 
 
 
 Bald eagle productivity metrics are presented by river segment in Table `r TableCounter`.
 
-Table `r TableCounter`. Bald eagle productivity and success rates by river segment, `r SurveyYear`.
+Table `r TableCounter`. Bald eagle productivity and success rates by river segment, `r SurveyYear`. MCR = Middle Copper River, LCR = Lower Copper River, UCR = Upper Copper River, BR = Bremner River, CHIT = Chitina River.
 
 ```{r echo=FALSE,label="Bald eagle productivity and success rates by river segment"}
 
 # Retrieve the annual summary information from the database
-Sql = paste("SELECT  * FROM DashboardByRiverSegment
-WHERE Year <= ",SurveyYear," 
-And [River segment] <> 'Chitina River Tributaries' -- only done once
-And NOT([River segment] = 'Chitina' And Year = 1989) -- Only two nests observed, one successful, inflates chitina productivity so omit
+Sql = paste("SELECT Year
+, [River segment]
+,CASE
+	WHEN [River segment] = 'Bremner' THEN 'BR'
+	WHEN [River segment] = 'Chisana' THEN 'CHIS'
+	WHEN [River segment] = 'Chitina' THEN 'CHIT'
+	WHEN [River segment] = 'Copper' THEN 'CR'
+	WHEN [River segment] = 'Gulkana' THEN 'GULK'
+	WHEN [River segment] = 'Klutina' THEN 'KLUT'
+	WHEN [River segment] = 'Lower Copper' THEN 'LCR'
+	WHEN [River segment] = 'Middle Copper' THEN 'MCR'
+	WHEN [River segment] = 'Ptarmigan' THEN 'PTAR'
+	WHEN [River segment] = 'Tanana' THEN 'TAN'
+	WHEN [River segment] = 'Tasnuna' THEN 'TAS'
+	WHEN [River segment] = 'Tonsina' THEN 'TONS'
+	WHEN [River segment] = 'Upper Copper' THEN 'UCR'
+	WHEN [River segment] = 'Yakutat' THEN 'YAK'
+END as [Segment]
+, Records
+, [Available nests]
+, [Available but omitted]
+, [Nests located]
+, [Nests not located]
+, [Nests not found]
+, [Nests not counted]
+, [Productivity unknown]
+, [Productivity known]
+, New
+, Lost
+, [Net gain]
+, [Ending nest count]
+, Occupied
+, [Pct. occupied]
+, Successful
+, [Pct. successful]
+, Eggs
+, [Eggs per successful nest]
+, Young
+, [Young per successful nest]
+, Fledglings
+, [Fledglings per successful nest]
+, [Start of occupancy surveys]
+, [End of occupancy surveys]
+, [Number of occupancy survey days]
+, [Start of productivity surveys]
+, [End of productivity surveys]
+, [Number of productivity survey days]
+, [Certified records]
+FROM DashboardByRiverSegment
+WHERE (Year <= ",SurveyYear,") 
+AND ([River segment] <> 'Chitina River Tributaries') 
+AND (NOT ([River segment] = 'Chitina')) OR (Year <= 2025) 
+AND ([River segment] <> 'Chitina River Tributaries') AND (NOT (Year = 1989))
 ORDER BY Year",sep="")
 
 # Get the data from the database into a data frame
@@ -365,7 +438,7 @@ CurrentSummaryByRiverSegment = SummaryByRiverSegment %>%
     `Pct. successful` = round(`Pct. successful`,1),
     `Young per successful nest` = round(`Young per successful nest`,2)
   ) %>%
-  select(`River segment`,
+  select(`Segment`,
          -`Available nests`,
          -`Available but omitted`,
          `Nests located`,
@@ -390,9 +463,10 @@ kable(t(CurrentSummaryByRiverSegment))
 TableCounter = TableCounter + 1
 ```
 
+
 ```{r,echo=FALSE}
 df_long <- CurrentSummaryByRiverSegment %>% 
-  select(`River segment`,`Pct. occupied`,`Pct. successful`) %>% 
+  select(`Segment`,`Pct. occupied`,`Pct. successful`) %>% 
   #mutate(Failed = 100 - (PctOccupied + PctSuccessful)) %>%
   pivot_longer(
     cols = c(`Pct. occupied`,`Pct. successful`),
@@ -403,10 +477,10 @@ df_long <- CurrentSummaryByRiverSegment %>%
     Category = recode(Category,
                       `Pct. occupied` = "% Occupied",
                       `Pct. successful` = "% Successful")) %>%
-  arrange(`River segment`,Category)
+  arrange(`Segment`,Category)
 
 # Stacked + percent
-ggplot(df_long, aes(fill = Category, y = Percent, x = `River segment`)) +
+ggplot(df_long, aes(fill = Category, y = Percent, x = `Segment`)) +
   geom_bar(position = "dodge", stat = "identity") +
   theme_minimal() +
   theme(
@@ -415,7 +489,7 @@ ggplot(df_long, aes(fill = Category, y = Percent, x = `River segment`)) +
 
 ```
 
-Figure `r FigureCounter`. Percent nest occupancy and success by river segment, `r SurveyYear`.
+Figure `r FigureCounter`. Percent nest occupancy and success by river segment, `r SurveyYear`. MCR = Middle Copper River, LCR = Lower Copper River, UCR = Upper Copper River, BR = Bremner River, CHIT = Chitina River.
 
 # Future Directions
 
@@ -427,6 +501,7 @@ if(1==0){
   CurrentDirectory = "C:/Development/WRST BAEA Reports R Markdown/"
   From = paste(CurrentDirectory,"WRST BAEA Annual Summary Report Short.pdf",sep='')
   To = paste(CurrentDirectory,SurveyYear," WRST BAEA Survey Summary.pdf",sep='') # ARCN
+  cat(From,' to ',To)
   
   # Copy the file to the Network reports directory
   file.copy(From, To, overwrite = TRUE)
