@@ -19,45 +19,59 @@ library(ggrepel)
 Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "INP2300IRMADB01.nps.doi.net\\NTWK", Database = "CAKN_BaldEagles")
 
 ```
+
+# Overview
+
+This document lines out the steps needed to generate the files the WRST biologist will need to perform a bald eagle survey in WRST -- it is not intended to generate a report as much as efficiently guide the CAKN data manager through the steps needed to prepare files for a BAEA survey.
+
+*The best way to use this template is to read and follow the directions in each code chunk sequentially, modifying as needed, in order to generate pre-survey files.*
+
 # Set up script parameters
 
 Set up script parameters here. You must create the survey directory and add the path below. It's fastest to create the directories and files locally and copy them to the BAEA directory on the J drive at `J:\Monitoring\Bald_Eagles\Data\`
 
 ```{r}
+# Survey year for which pre-survey file are being generated
+SurveyYear = 2026
 # The current survey directory where deliverables should be sent or found
-#DeliverablesDirectory = r'(J:\Monitoring\Bald_Eagles\Data\)' # Network (slow, but this is where all critical files should be stored. Copy to here from local when done)
-DeliverablesDirectory = r'(C:\Work\VitalSigns\CAKN Bald Eagles\Data\2026 WRST BAEA Survey\)' # Local
+# DeliverablesDirectory = r'(J:\Monitoring\Bald_Eagles\Data\)' # Network (slow, but this is where all critical files should be stored. Copy to here from local when done)
+DeliverablesDirectory = paste0("C:/Work/VitalSigns/CAKN Bald Eagles/Data/",SurveyYear," WRST BAEA Survey/") # Local
+# Survey directory
+if(dir.exists(DeliverablesDirectory) == FALSE){
+   dir.create(DeliverablesDirectory)
+}
 cat("The survey directory is ",DeliverablesDirectory,"\n")
 
 ```
 
+# Step 1. Set up the survey directory and file structure
 
-# Set up the survey directory and file structure
+BAEA deliverables and files (see Appendix, below) are worked up in the CAKN shared drive (J:\\ drive) and moved to the NPS Data Store when finished for long term archival. Keep in mind that deliverable files are not the same as analytical data, which come from the CAKN_Bald Eagles SQL Server database. Deliverable files are used to collect and process data that are intended for ingestion into the database, processed for quality, certified and subsequently analyzed.
+
+Objective: Set up pre-survey and post-survey directories to hold data deliverable files.
 
 ```{r}
+
+
 # Pre-survey: Directory where pre-survey files should be sent. These are active nest inventory, gpx, kml, and map files, etc. needed for the survey.
-#PreSurveyDirectory = paste0(DeliverablesDirectory,'Pre-survey files/')
+PreSurveyDirectory = paste0(DeliverablesDirectory,'Pre-survey files/')
 # Create the pre-survey directory if it does not exist
-# if(dir.exists(PreSurveyDirectory) == FALSE){
-#   cat(PreSurveyDirectory," does not exist. Creating.")
-#   dir.create(PreSurveyDirectory)
-# } else {
-#   cat("The Pre-survey files directory is ",PreSurveyDirectory,"\n")
-# }
-# 
+if(dir.exists(PreSurveyDirectory) == FALSE){
+   dir.create(PreSurveyDirectory)
+}
+cat("The Pre-survey files directory is ",PreSurveyDirectory,"\n")
+
 # # Post survey: Directory where post-survey raw data files should be sent. These are pre-survey files, but populated with raw, unprocessed data
-# PostSurveyDirectory = paste0(DeliverablesDirectory,'Post survey files/')
-# # Create the Post-survey directory if it does not exist
-# if(dir.exists(PostSurveyDirectory) == FALSE){
-#   cat(PostSurveyDirectory," does not exist. Creating.")
-#   dir.create(PostSurveyDirectory)
-# } else {
-#   cat("The Post survey files directory is ",PostSurveyDirectory,"\n")
-# }
+PostSurveyDirectory = paste0(DeliverablesDirectory,'Post survey files/')
+# Create the Post-survey directory if it does not exist
+ if(dir.exists(PostSurveyDirectory) == FALSE){
+   dir.create(PostSurveyDirectory)
+}
+cat("The Post survey files directory is ",PostSurveyDirectory,"\n")
+
 ```
 
-
-# Pre-Survey
+# Step 2. Generate pre-survey files
 
 ## Generate Deliverable BE-13: Pre-survey Nests Inventory
 
@@ -65,7 +79,7 @@ The purpose of this section is to generate a CSV file of active nests that shoul
 
 ```{r,echo=FALSE}
 # Build a query
-sql = paste0("SELECT [RiverSegment]
+Sql = paste0("SELECT [RiverSegment]
 ,[Nest_ID]
 ,[NESTID]
 ,'' As NEW
@@ -91,20 +105,17 @@ FROM [CAKN_BaldEagles].[dbo].[ActiveNestsForDatasheets]
 ORDER BY RiverSegment,Territory,NestNumber")
 
 # Submit the query to the database
-Nests = dbGetQuery(Connection,sql)
-# glimpse(Nests)
-# Nests
-
-# Make a list of things to check on during the survey
-# Nests %>% summarize(
-#   `Missing tree species` = sum(is.na(`TREE SPP`)),
-#   `Missing tree status` = sum(is.na(`LIVE/DEAD`))  
-# )
+Nests = dbGetQuery(Connection,Sql)
 
 # Write the active nests file to the pre-survey directory
-BE13File = paste0(DeliverablesDirectory,'/BE-13 ',year(Sys.Date())," Pre-Survey Bald Eagle Active Nests Inventory.csv")
-cat("Pre-survey file written to ",BE13File,'\n')
-write.csv(Nests,BE13File,quote = TRUE,na='',row.names = FALSE)
+BE13File = paste0(PreSurveyDirectory,'/BE-13 ',SurveyYear," Pre-Survey Bald Eagle Active Nests Inventory.csv")
+if(file.exists(BE13File)){
+  cat("The BE13 deliverable file (Nests) exists. Delete the existing file to continue. (",BE13File,')\n')
+  # file.remove(BE13File) # Highlight and run to delete the file
+} else {
+  write.csv(Nests,BE13File,quote = TRUE,na='',row.names = FALSE)
+  cat("Pre-survey file written to ",BE13File,'\n')
+}
 
 ```
 
@@ -112,16 +123,17 @@ write.csv(Nests,BE13File,quote = TRUE,na='',row.names = FALSE)
 
 ```{r}
 # Write the active nests to GPX file
-NestsSF = st_as_sf(Nests %>% select(
-  name = Nest_ID,
-  desc = `TREE SPP`,
-  Longitude,
-  Latitude
-),crs=4326,coords=c('Longitude','Latitude'))
-BE14File = paste0(DeliverablesDirectory,'/BE-14 ',year(Sys.Date())," Bald Eagle Survey Active Nests.gpx")
-st_write(NestsSF, BE14File, driver = "GPX", layer = "waypoints",append = FALSE)  
-cat("Deliverable BE-14 GPX file written to ",BE14File,'\n')                 
-#.rs.restartR()
+# Start by making a simple features data frame
+NestsSF = st_as_sf(Nests %>% select(name = Nest_ID,desc = `TREE SPP`,Longitude,Latitude),crs=4326,coords=c('Longitude','Latitude'))
+# Make a file path for the BE14 deliverabl (gpx file)
+BE14File = paste0(PreSurveyDirectory,'/BE-14 ',SurveyYear," Bald Eagle Survey Active Nests.gpx")
+if(file.exists(BE14File)){
+  cat("The BE14 deliverable file (GPX) exists. Delete the existing file to continue. (",BE14File,')\n')
+  # file.remove(BE14File) # Highlight and run to delete the file
+} else {
+  st_write(NestsSF, BE14File, driver = "GPX", layer = "waypoints",append = FALSE)  
+  cat("Deliverable BE-14 GPX file written to ",BE14File,'\n')                 
+}
 
 ```
 
@@ -138,13 +150,19 @@ NestsSF = st_as_sf(Nests %>% select(
   Longitude,
   Latitude
 ),crs=4326,coords=c('Longitude','Latitude'))
-BE14FileKML = paste0(DeliverablesDirectory,'/BE-14 ',year(Sys.Date())," Bald Eagle Survey Active Nests.kml")
-st_write(NestsSF, BE14FileKML, driver = "KML", layer = "waypoints",append = FALSE)  
-cat("Deliverable BE-14 KML file written to ",BE14FileKML,'\n')                 
+
+# Make a file path for the BE14 KML file
+BE14FileKML = paste0(PreSurveyDirectory,'/BE-14 ',SurveyYear," Bald Eagle Survey Active Nests.kml")
 #.rs.restartR()
+if(file.exists(BE14FileKML)){
+  cat("The BE14 deliverable file (KML) exists. Delete the existing file to continue. (",BE14FileKML,')\n')
+  # file.remove(BE14FileKML) # Highlight and run to delete the file
+} else {
+  st_write(NestsSF, BE14FileKML, driver = "KML", layer = "waypoints",append = FALSE)  
+  cat("Deliverable BE-14 KML file written to ",BE14FileKML,'\n')                 
+}
 
 ```
-
 
 ## Generate Deliverable BE-14: Survey map images
 
@@ -203,13 +221,13 @@ GetMap = function(RSegment){
     # Park boundary
     geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
   
-      # Rivers
+    # Rivers
     geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +  
     
     # Nests
     geom_point(data=Sites, aes(x = Longitude, y = Latitude,colour=`TREE SPP`),size=2) +
     geom_text_repel(data=Sites, aes(x = Longitude, y = Latitude,label = Nest_ID),size=3) +
-    scale_color_manual(values = c("POPLAR" = "black", "SPRUCE" = "darkgreen"),na.value = 'red') +
+    scale_color_manual(values = c("POPLAR" = "black", "SPRUCE" = "green"),na.value = 'red') +
     #scale_shape_manual(values = c(4,19),na.value = 19) + # 4 = X, 19 = dot
     
     # Zoom to bounding box
@@ -217,7 +235,7 @@ GetMap = function(RSegment){
       xlim = c(as.numeric(bbox["xmin"]), as.numeric(bbox["xmax"])),
       ylim = c(as.numeric(bbox["ymin"]), as.numeric(bbox["ymax"])),
       expand = FALSE
-    )
+    ) +
     labs(title = RSegment) +
     xlab('Longitude') +
     ylab('Latitude') +
@@ -228,48 +246,295 @@ GetMap = function(RSegment){
     return(map)
 }
 #Test: 
-#GetMap('Upper Copper')
+GetMap('Bremner')
 
+```
+
+NOTE: These maps are not great for taking to the field. The labels are often missing for closely spaced nests. It would be better to try to make some sort of XY grid of maps with a key map. Also, ggplot can't really add raster layers such as hillshaded terrain which would really help with situational awarenes. Probably better to generate the maps in QGIS.
+
+```{r}
 # Loop the river segments and export maps
 if(1==1){
   for(RSegment in Nests %>% distinct(RiverSegment) %>% pull(RiverSegment)){
     Map = GetMap(RSegment)
     cat("Building a map for river segment: ",RSegment,"\n")
     print(Map)
-    BE14FilePNG = paste0(DeliverablesDirectory,'/BE-14 ',year(Sys.Date())," Bald Eagle Survey Active Nests Map - ",RSegment,".png")
+    BE14FilePNG = paste0(PreSurveyDirectory,'/BE-14 ',SurveyYear," Bald Eagle Survey Active Nests Map - ",RSegment,".png")
     ggsave(BE14FilePNG, plot = Map, width = 7.5, height = 10, dpi = 300)
     cat("Deliverable BE-14 PNG map file written to ",BE14FilePNG,'\n')  
   }
 }
+```
+
+# Step 3. Generate Deliverable BE-08, Post-survey data files
+
+At this point the biologist has conducted the survey and transformed the empty Deliverable BE-13 file into Deliverable BE-08, the populated field data containing occupancy and productivity data. From here the main objective is to process the data for quality and import them into the CAKN_BaldEagles SQL Server database.
+
+Step 3 is the process of creating and executing Deliverable BE-12, the data processing script that converts the raw data from BE-08 into a series of SQL INSERT query scripts that can be executed in Microsoft SQL Server Management Studio to insert the new records into the database and modify existing records based on new information.
+
+Step 3 is extensive and cannot be described discretely here. A good course of action is to find a previous BE-12 survey data processing R script in a previous year's data directory and modify it. A good example is `J:\Monitoring\Bald_Eagles\Data\2025 WRST BAEA Survey\BE12 2025 Bald Eagle Survey Data Processing Script.qmd.`
+
+Major tasks accomplished in a BE-12 data processing script include the following:
+
+1.  Read in the raw survey data from BE-13.
+2.  Tidy the data. Fix the dates and whatever data quality bombs Excel introduced.
+3.  Create a new Survey record in the database's Surveys table to describe the survey, who conducted it, etc.
+4.  Extract new nests data and create an SQL INSERT query script to import them into the database. New nest records must exist in the database prior to importing nest occupancy and productivity data.
+5.  Create SQL INSERT query scripts to insert the occupancy and productivity data into the database.
+6.  Create SQL UPDATE query scripts to change any data pre-existing in the data based on new information ('Nest is gone', 'tree species is spruce', etc.)
+
+Once these QC tasks are done and the SQL scripts generated you can execute the scripts in SQL Server Management Studio to insert/update records.
+
+# Step 4. Generate BE-15, Data Quality Control Report
+
+The BAEA data management system has a number of quality assurance and quality control systems in place to maintain high data quality. The primary tools include QC queries built into the CAKN_BaldEagles database and the `WRST BAEA Annual Data Quality Report.qmd` R Quarto script.
+
+**Procedure**
+
+1.  In a browser locate `WRST BAEA Annual Data Quality Report.qmd` (<https://github.com/NPS-ARCN-CAKN/WRST-BAEA/blob/main/WRST%20BAEA%20Annual%20Data%20Quality%20Report.qmd>), download it and open it in R Studio. You will need minimally `datareader` permissions on the database.
+2.  Modify the parameters at the head of the report and run the code chunks or build the report.
+3.  Examine the output and document or repair any data defects that are revealed by the report:
+    1.  The database `SurveyData` table has three columns suitable for documenting problems, `Comments_O`, `Comments_P` and `DataProcessingComment`. `Comments_O` is for comments regarding the occupancy survey portion of the record's attributes, `Comments_P` is the same but for the productivity portion, and `DataProcessingComment` is for recording problems unrelated to the survey itself.
+    2.  Also record data quality problems in the database `Surveys` table in the `DataQualityNotes` field.
+4.  Once all QC problems have been addressed, generate a final PDF copy of the QC report and archive it with the survey data. Deliverable BE15 should be named similar to BE15 YYYY Bald Eagle Survey Data Quality Report.pdf, substituting the year for YYYY. Example: `BE15 2026 Bald Eagle Survey Data Quality Report.pdf`.
+
+Note: The Quarto template will show three levels of test results:
+
+-   Passed = OK
+-   Warnings may or may not be fatal and should be investigated and repaired. Typically, Warnings reflect known problems from the past that cannot be repaired and are generally already documented, but you should verify the latest survey records are not the ones causing Warnings.
+-   Failures should always be fixed or documented.
+
+Tip: You may also run any of the quality control queries through Microsoft SQL Server Management Studio (MSSMS):
+
+1.  Open MSSMS and log into `INP2300IRMADB01.nps.doi.net\NTWK:CAKN_BaldEagles`(contact the CAKN data manager or the IMD database administrator for permission.
+2.  Expand the the Views node to find the quality control queries (all prefixed by 'QC\_', see above). Run the queries and fix or document data defects.
+3.  Tip: use the NestDebugger stored procedure to help figure out problems with specific nests and data records. Example: `EXEC NestDebugger '10-1'`.
+
+# Step 5. Generate a Survey Summary Report
+
+Step 5 is optional, but can be useful for the project leader to communicate to Park managers how the survey went and preliminary results.
+
+Procedure
+
+-   Navigate to the WRST BAEA GitHub repository and download <https://github.com/NPS-ARCN-CAKN/WRST-BAEA/blob/main/WRST%20BAEA%20Annual%20Summary%20Report%20Short.qmd>
+
+-   Open the file in R Studio
+
+-   Change the parameters of the Quarto template from above to reflect the current survey. Follow any other instructions embedded in the code chunks.
+
+-   Execute the report. Ensure the results are accurate.
+
+# Step 6. Certify and publish the BAEA dataset
+
+Once quality control procedures have been done and problems dealt with it is time to certify and publish the data to the NPS Data Store.
+
+**Objective**
+
+Advise the BAEA monitoring project leader that the latest survey data have been integrated with the master monitoring database and quality control procedures have been run and, assuming there are no major problems, you recommend certifying the new records and extending the authoritative [Certified Dataset for the Long Term Monitoring of the Distribution and Abundance of Bald Eagles in Wrangell-St. Elias National Park and Preserve](https://irma.nps.gov/DataStore/Reference/Profile/2310966) Dataset Reference in the NPS Data Store.
+
+**Procedure**
+
+1.  Notify the project leader that the data have been imported into the database, quality control results are satisfactory and request permission to certify. Send the BE-15 data quality control report and, optionally the survey summary report from Step 5, above.
+
+2.  Request permission to certify the current year's records and append them to the bald eagles certified dataset.
+
+3.  If permission is granted then in SSMS issue `EXEC CertifySurveyData YYYY, 'CertifierName'` where YYYY indicates the integer year of the survey data you would like to certify (Example: `EXEC CertifySurveyData 2025, 'NPS\KCCutting'`). The stored procedure will set the `CertificationLevel` attribute to all records in the `SurveyData` Table for the given year to 'Certified'.
+
+4.  The next step is to generate the two file certified dataset to archive in Data Store. Execute the following to generate the two data files:
+
+    ```{r echo=FALSE,include=FALSE}
+    # Set this to the directory where you would like the deliverable files to be created
+    CertifiedDataDirectory = r'(C:\Work\VitalSigns\CAKN Bald Eagles\Data\Certified Datasets\)'
+
+    # Generate the Nests deliverable file
+    Sql = paste("SELECT [Nest_ID]
+          ,[TerritoryID]
+          ,[NestNumber]
+          ,[IsActive]
+          ,[DiscoverDate]
+          ,[FirstSightingDate]
+          ,[LastSightingDate]
+          ,[DateDiscoveredGone]
+          ,[Fate]
+          ,[Duration (years)]
+          ,[RiverSegment]
+          ,[TreeSpecies]
+          ,[Species]
+          ,[TreeIsDead]
+          ,[NumberOfTimesNotFoundInTheLast2Surveys]
+          ,[OccupancyObservations]
+          ,[NestInitiations]
+          ,[ProductivityObservations]
+          ,[NumberOfTimesSuccessful]
+          ,[PctSuccessful]
+          ,[AvgYoungPerSuccessfulNest]
+          ,[EarliestOccupancyRecord]
+          ,[LatestOccupancyRecord]
+          ,[EarliestProductivityRecord]
+          ,[LatestProductivityRecord]
+          ,[Latitude]
+          ,[Longitude]
+          --,[Location]
+          ,[NestSub]
+          ,[Comments]
+          ,[WKT]
+          --,[PointFeature]
+      FROM [CAKN_BaldEagles].[dbo].[Dataset_Nests]",sep="")
+    Nests = dbGetQuery(Connection,Sql)
+    NestsFilename = paste0("WRST BAEA Certified Nests Dataset Ver. ",Sys.Date(),".csv")
+    NestsFile = paste0(CertifiedDataDirectory,NestsFilename)
+    if(1==0){
+      write.csv(Nests,NestsFile,quote=TRUE,na='',row.names = FALSE)
+    }
 
 
+    ```
+
+```{r echo=FALSE,include=FALSE}
+# Generate the surveys deliverable file
+Sql = paste("SELECT [Year]
+      ,[TerritoryID]
+      ,[NestNumber]
+      ,[Nest_ID]
+      ,[RiverSegment]
+      ,[TreeSpecies]
+      ,[Date_O]
+      ,[Nest_O]
+      ,[OccupancyStatus]
+      ,[Date_P]
+      ,[StatusCode_P]
+      ,[ProductivityStatus]
+      ,[Productivity]
+      ,[NestIsNew]
+      ,[NestIsGone]
+      ,[NestIsGoneConfirmation]
+      ,[NumAds_O]
+      ,[AdBehav1_O]
+      ,[AdBehav2_O]
+      ,[NumAds_P]
+      ,[AdBehav1_P]
+      ,[AdBehav2_P]
+      ,[NumEggs_O]
+      ,[NumYng]
+      ,[NumFlg]
+      ,[Chick_Age]
+      ,[NestCondition_O]
+      ,[Comments_O]
+      ,[Comments_P]
+      ,[DataProcessingComment]
+      ,[SourceFile]
+      ,[Latitude]
+      ,[Longitude]
+      ,[CertificationLevel]
+      ,[CertificationDate]
+      ,[CertifiedBy]
+  FROM [CAKN_BaldEagles].[dbo].[Dataset_Productivity]
+  WHERE CertificationLevel <> 'Raw'
+  ORDER BY Year,TerritoryID,NestNumber",sep="")
+SurveyData = dbGetQuery(Connection,Sql)
+SurveyDataFilename = paste0("WRST BAEA Certified Productivity Dataset Ver. ",Sys.Date(),".csv")
+SurveyDataFile = paste0(CertifiedDataDirectory,SurveyDataFilename)
+if(1==0){
+  write.csv(SurveyData,SurveyDataFile,quote=TRUE,na='',row.names = FALSE)
+}
 
 ```
 
+<https://irma.nps.gov/DataStore/Reference/Profile/2310966>
 
+WRST BAEA Certified Productivity Dataset Ver. 2025-05-02.csv
 
+WRST BAEA Certified Nests Dataset Ver. 2025-05-02.csv
 
+# Appendix: Deliverables Schedule
 
+The data management system for BAEA monitoring is very dependent on disciplined processing of standard deliverable files. For reference, these files appear in this appendix.
 
+```{r}
+# Get the deliverables schedule
+# Project management database connection
+VSID = 39
+AKROConnection = dbConnect(odbc(),Driver = "Sql Server",Server = "INP2300IRMADB01.nps.doi.net\\NTWK", Database = "AKRO")
+Sql = paste0("SELECT VitalSign
+, Version
+, ProtocolCitation
+, Identifier
+, Deliverable
+, SOP
+, SOPVersion
+, Format
+, Schedule
+, Responsibility
+, Convert(Varchar(4000), [Description]) As [Description]
+, Convert(Varchar(4000), Specifications) As Specifications
+, Convert(Varchar(4000), FileNamingScheme) As FileNamingScheme
+, Convert(Varchar(4000), DataHandling) As DataHandling
+, Convert(Varchar(4000), QAQC) As QAQC
+, Convert(Varchar(4000), Archival) As Archival
+, Convert(Varchar(4000), BuilderTasks) As BuilderTasks
+, Convert(Varchar(4000), ValidatorTasks) As ValidatorTasks
+, Convert(Varchar(4000), CertifierTasks) As CertifierTasks
+, ProtocolTitle, IRMAReferenceCode, NetworkID, VSID, ProtocolID
+FROM vwDeliverablesSchedule2
+WHERE VSID=",VSID,"
+ORDER BY VitalSign, Version, Identifier")
+DeliverablesSchedule = dbGetQuery(AKROConnection,Sql)
+glimpse(DeliverablesSchedule)
+DeliverablesSchedule %>% arrange(desc(Version),Identifier,Deliverable) %>% select(Version,Identifier,Deliverable)
+knitr::kable(DeliverablesSchedule %>% select(Identifier,Deliverable))
 
+```
 
+```{r,echo=FALSE,results='asis'}
+# Pump out details for each deliverable in markdown format
+for(i in 1:nrow(DeliverablesSchedule)){
+  Identifier = DeliverablesSchedule[i,'Identifier']  
+  Deliverable = DeliverablesSchedule[i,'Deliverable']  
+  Format = DeliverablesSchedule[i,'Format']  
+  Schedule = DeliverablesSchedule[i,'Schedule']  
+  Responsibility = DeliverablesSchedule[i,'Responsibility']  
+  Description = DeliverablesSchedule[i,'Description']  
+  Specifications = DeliverablesSchedule[i,'Specifications']  
+  FileNamingScheme = DeliverablesSchedule[i,'FileNamingScheme']  
+  DeliverablesScheduleHandling = DeliverablesSchedule[i,'DeliverablesScheduleHandling']  
+  QC = DeliverablesSchedule[i,'QC']  
+  Archival = DeliverablesSchedule[i,'Archival']  
+  BuilderTasks = DeliverablesSchedule[i,'BuilderTasks']  
+  ValidatorTasks = DeliverablesSchedule[i,'ValidatorTasks']  
+  CertifierTasks = DeliverablesSchedule[i,'CertifierTasks']  
+  Version = DeliverablesSchedule[i,'Version']  
+  ProtocolID = DeliverablesSchedule[i,'ProtocolID']  
+  SOP = DeliverablesSchedule[i,'SOP']  
+  SOPVersion = DeliverablesSchedule[i,'SOPVersion']  
+  DeliverableID = DeliverablesSchedule[i,'DeliverableID']  
+  VSID = DeliverablesSchedule[i,'VSID']  
+  NetworkID = DeliverablesSchedule[i,'NetworkID']
 
+  cat("# ",Identifier,": ",Deliverable,"  \n\n",sep="")
+  cat("*Format:* ",Format,"  \n\n",sep="")  
+  cat("*Schedule:* ",Schedule,"  \n\n",sep="")  
+  cat("*Responsibility:* ",Responsibility,"  \n\n",sep="")  
+  cat("*Description:* ",Description,"  \n\n",sep="")  
+  cat("*Specifications:* ",Specifications,"  \n\n",sep="")  
+  cat("*FileNamingScheme:* ",FileNamingScheme,"  \n\n",sep="")  
+  # cat("*DataHandling:* ",DataHandling,"  \n\n",sep="")  
+  cat("*QC:* ",QC,"  \n\n",sep="")  
+  cat("*Archival:* ",Archival,"  \n\n",sep="")  
+  cat("*BuilderTasks:* ",BuilderTasks,"  \n\n",sep="")  
+  cat("*ValidatorTasks:* ",ValidatorTasks,"  \n\n",sep="")  
+  cat("*CertifierTasks:* ",CertifierTasks,"  \n\n",sep="")  
+  # cat("*Version:* ",Version,"  \n\n",sep="")  
+  # cat("*ProtocolID:* ",ProtocolID,"  \n\n",sep="")  
+  # cat("*SOP:* ",SOP,"  \n\n",sep="")  
+  # cat("*SOPVersion:* ",SOPVersion,"  \n\n",sep="")  
+  # cat("*DeliverableID:* ",DeliverableID,"  \n\n",sep="")  
+  # cat("*VSID:* ",VSID,"  \n\n",sep="")  
+  # cat("*NetworkID:* ",NetworkID,"  \n\n",sep="") 
+  cat("  \n\n")
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# for(Col in colnames(DeliverablesSchedule)){
+#   # cat(Col," = DeliverablesSchedule[i,'",Col,"']  \n",sep="")
+#   cat("cat(\"*",Col,":* \",",Col,",\"  \\n\\n\",sep=\"\")  \n",sep="")
+# }
+```
