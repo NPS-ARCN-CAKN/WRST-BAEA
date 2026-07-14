@@ -63,36 +63,40 @@ if(1==1){
 
 # Get a summary of survey results, omitting 2016 which was a bust survey
 Sql = paste("SELECT [Year]
-      ,[Records]
-      ,[Available nests]
-      ,[Available but omitted]
-      ,[Nests located]
-      ,[Nests not located]
-      ,[Nests not counted]
-      ,[Productivity unknown]
-      ,[Productivity known]
-      ,[New]
-      ,[Lost]
-      ,[Net gain]
-      ,[Ending nest count]
-      ,[Occupied]
-      ,[Pct. occupied]
-      ,[Successful]
-      ,[Pct. Successful]
-      ,[Eggs]
-      ,[Eggs per occupied nest]
-      ,[Young]
-      ,[Young per successful nest]
-      ,[Fledglings]
-      ,[Fledglings per successful nest]
-      ,[Start of occupancy surveys]
-      ,[End of occupancy surveys]
-      ,[Number of occupancy survey days]
-      ,[Start of productivity surveys]
-      ,[End of productivity surveys]
-      ,[Number of productivity survey days]
-      ,[Certified records] FROM Dashboard WHERE Year <= ",SurveyYear," AND Year NOT IN (2016) 
-      ORDER BY [Year] DESC",sep="")
+,[Records]
+,[Available nests]
+,[Available but omitted]
+,[Nests located]
+,[Nests not located]
+,[Nests not counted]
+,[Productivity unknown]
+,[Productivity known]
+,[New]
+,[Lost]
+,[Net gain]
+,[Ending nest count]
+,[Occupied]
+,[Pct. occupied]
+,[Successful]
+,[Pct. Successful]
+,[Eggs]
+,[Eggs per occupied nest]
+,[Young]
+,[NestsProducingOneYoung]
+,[NestsProducingTwoYoung]
+,[NestsProducingThreeYoung]
+,[NestsProducingGTThreeYoung]
+,[Young per successful nest]
+,[Fledglings]
+,[Fledglings per successful nest]
+,[Start of occupancy surveys]
+,[End of occupancy surveys]
+,[Number of occupancy survey days]
+,[Start of productivity surveys]
+,[End of productivity surveys]
+,[Number of productivity survey days]
+,[Certified records] FROM Dashboard WHERE Year <= ",SurveyYear," AND Year NOT IN (2016) 
+ORDER BY [Year] DESC",sep="")
 Summary = dbGetQuery(Connection,Sql) 
 
 # Build some survey date values to use later in the markdown text
@@ -131,13 +135,14 @@ ExecutiveSummaryText = paste("Nest occupancy surveys were flown between ",GetLon
 
 Kyle Cutting^1^ and Scott Miller^2^
 
-^1^National Park Service, Wrangell St. Elias National Park and Preserve\
-8 Richardson Hwy Mile 106\
+^1^ National Park Service   
+Wrangell St. Elias National Park and Preserve   
+8 Richardson Hwy Mile 106   
 Copper Center, AK 99573
 
-^2^U.S. Department of the Interior\
-240 W. 5th Ave Anchorage\
-Alaska 99501
+^2^ U.S. Department of the Interior   
+240 W. 5th Ave Anchorage   
+Alaska 99501   
 
 `r CurrentDate`
 
@@ -481,19 +486,16 @@ df_long <- CurrentSummaryByRiverSegment %>%
 
 # Stacked + percent
 ggplot(df_long, aes(fill = Category, y = Percent, x = `Segment`)) +
-  geom_bar(position = "dodge", stat = "identity") +
-  theme_minimal() +
-  theme(
-    legend.position = "top")
+  geom_bar(stat = "identity", width = 0.6, position = position_dodge(width = .4)) +
+  scale_fill_grey(start = 0.2, end = 0.6) +
+  theme_grey() +
+  theme(legend.position = "bottom")
 
 
 ```
 
 Figure `r FigureCounter`. Percent nest occupancy and success by river segment, `r SurveyYear`. MCR = Middle Copper River, LCR = Lower Copper River, UCR = Upper Copper River, BR = Bremner River, CHIT = Chitina River.
 
-# Future Directions
-
-Aerial surveys for bald eagles will occur again in the breeding season of 2026 across each river segment. We will also conduct raft-based surveys to measure foraging patterns of bald eagles across different river segments to evaluate how salmon variability and other prey items, along with habitat conditions, may affect this observed spatial pattern in eagle reproductive success. 
 
 ```{r echo=FALSE,include=FALSE}
 if(1==0){
