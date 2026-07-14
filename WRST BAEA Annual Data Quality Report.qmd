@@ -111,7 +111,7 @@ if(nrow(obs) > 0){
     # Alaska polygon
     #geom_sf(data = AK, fill = "white", color = "gray80", alpha = 0.5) +
     geom_sf(data=Parks,fill='gray80') +
-    geom_sf(data = Rivers, fill = "lightsteelblue", color = 'lightsteelblue',alpha=0.4) +
+    geom_sf(data = Rivers, fill = "lightsteelblue", color = 'lightsteelblue',alpha=0.6) +
     geom_sf(data = Roads, fill = "gray50", color = 'gray50',alpha=0.4) +
     
     # Parks polygons
@@ -269,24 +269,14 @@ for(Table in Tests$Table){
 ```
 
 ```{r,echo=FALSE,warning=FALSE,include=FALSE}
-# This section copies the output file to a new html file titled with the survey name
-# R doesn't seem to run this chunk during a knit operation so you'll have to set the SurveyName manually (way above) and then re-run this chunk to make sure the file gets copied correctly.
+
 if(1==0){
-  
   # Rename PDF
-  dst <- paste0(SurveyName," Quality Control Report.pdf")
-  src =  r'(C:\Development\ARCN Muskox R\ARCN Muskox Survey QC.pdf)'
-  cat("Source file exists: ",file.exists(src),"\n")
-  cat("Copy ",src," to ",dst,"\n")
+  src =  paste0("WRST BAEA Annual Data Quality Report.pdf")
+  file.exists(src)
+  dst <- paste0("BE15 ",SurveyYear," Bald Eagle Survey Data Quality Report.pdf")
+  file.exists(dst)
   file.copy(src, dst, overwrite = TRUE)
-  
-  # Rename HTML
-  dst <- paste0(SurveyName," Quality Control Report.html")
-  src =  r'(C:\Development\ARCN Muskox R\ARCN Muskox Survey QC.html)'
-  cat("Source file exists: ",file.exists(src),"\n")
-  cat("Copy ",src," to ",dst,"\n")
-  file.copy(src, dst, overwrite = TRUE)
-  
 }
 
 
