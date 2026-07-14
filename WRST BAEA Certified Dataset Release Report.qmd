@@ -8,63 +8,6 @@ format:
   html: default
 ---
 
-
-```{=html}
-<style>
-h1.title {
-  font-family: "Times New Roman";
-  font-size: 24px;
-  font-weight: bold;
-}
-
-h1 {
-    font-family: "Arial";
-    font-size: 20px;
-    font-weight: bold;
-}
-
-
-h2 {
-  font-family: "Arial";
-  font-size: 16px;
-  font-weight: bold;
-}
-
-h3 {
-  font-family: "Arial";
-  font-size: 14px;
-  font-weight: bold;
-}
-
-p {
-    font-family: "Times New Roman";
-    font-size: 12px;
-}
-
-.caption {
-    font-family: "Arial";
-    font-size: 10px;
-}
-
-p .caption {
-    font-family: "Arial";
-    font-size: 10px;
-}
-
-tr {
-    font-family: "Arial";
-    font-size: 10px;
-}
-
-.header{
-  font-family: "Arial";
-  font-size: 10px;
-  font-weight: bold;
-}
-
-</style>
-```
-
 # Certified Dataset: Long-term Monitoring of Bald Eagle Abundance and Distribution in Wrangell - St. Elias National Park and Preserve
 
 Scott D. Miller  
@@ -91,8 +34,6 @@ library(sf)
 # Make kable show blanks for NAs
 options(knitr.kable.NA = '')
 
-# These parameters restrict the dimensions of plots to 6 metric inches so they don't blow out Word
-FigWidth = 6
 ```
 
 ```{r echo=FALSE,label="SET UP REPORT PARAMETERS HERE"}
@@ -101,14 +42,110 @@ FigWidth = 6
 #ConnectionString = 'Driver={SQL Server};Server=inpyugamsvm01\\nuna;Database=CAKN_BaldEagles;Trusted_connection=yes'
 Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "INP2300IRMADB01.nps.doi.net\\NTWK", Database = "CAKN_BaldEagles")
 
-# Make kable show blanks for NAs
-options(knitr.kable.NA = '')
-
 # Function to convert a date string to a long date
 GetLongDate <- function(Date) {
   return(format(as.Date(Date), format="%B %d, %Y "))
 }
 
+```
+
+```{r echo=FALSE,include=FALSE}
+# Generate the Nests deliverable file
+Sql = paste("SELECT [Nest_ID]
+      ,[TerritoryID]
+      ,[NestNumber]
+      ,[IsActive]
+      ,[DiscoverDate]
+      ,[FirstSightingDate]
+      ,[LastSightingDate]
+      ,[DateDiscoveredGone]
+      ,[Fate]
+      ,[Duration (years)]
+      ,[RiverSegment]
+      ,[TreeSpecies]
+      ,[Species]
+      ,[TreeIsDead]
+      ,[NumberOfTimesNotFoundInTheLast2Surveys]
+      ,[OccupancyObservations]
+      ,[NestInitiations]
+      ,[ProductivityObservations]
+      ,[NumberOfTimesSuccessful]
+      ,[PctSuccessful]
+      ,[AvgYoungPerSuccessfulNest]
+      ,[EarliestOccupancyRecord]
+      ,[LatestOccupancyRecord]
+      ,[EarliestProductivityRecord]
+      ,[LatestProductivityRecord]
+      ,[Latitude]
+      ,[Longitude]
+      --,[Location]
+      ,[NestSub]
+      ,[Comments]
+      ,[WKT]
+      --,[PointFeature]
+  FROM [CAKN_BaldEagles].[dbo].[Dataset_Nests]",sep="")
+Nests = dbGetQuery(Connection,Sql)
+CertifiedDataDirectory = r'(C:\Work\VitalSigns\CAKN Bald Eagles\Data\Certified Datasets\)'
+NestsFilename = paste0("WRST BAEA Certified Nests Dataset Ver. ",Sys.Date(),".csv")
+NestsFile = paste0(CertifiedDataDirectory,NestsFilename)
+if(1==0){
+  write.csv(Nests,NestsFile,quote=TRUE,na='',row.names = FALSE)
+}
+
+
+```
+
+```{r echo=FALSE,include=FALSE}
+# Generate the surveys deliverable file
+Sql = paste("SELECT [Year]
+      ,[TerritoryID]
+      ,[NestNumber]
+      ,[Nest_ID]
+      ,[RiverSegment]
+      ,[TreeSpecies]
+      ,[Date_O]
+      ,[Nest_O]
+      ,[OccupancyStatus]
+      ,[Date_P]
+      ,[StatusCode_P]
+      ,[ProductivityStatus]
+      ,[Productivity]
+      ,[NestIsNew]
+      ,[NestIsGone]
+      ,[NestIsGoneConfirmation]
+      ,[NumAds_O]
+      ,[AdBehav1_O]
+      ,[AdBehav2_O]
+      ,[NumAds_P]
+      ,[AdBehav1_P]
+      ,[AdBehav2_P]
+      ,[NumEggs_O]
+      ,[NumYng]
+      ,[NumFlg]
+      ,[Chick_Age]
+      ,[NestCondition_O]
+      ,[Comments_O]
+      ,[Comments_P]
+      ,[DataProcessingComment]
+      ,[SourceFile]
+      ,[Latitude]
+      ,[Longitude]
+      ,[CertificationLevel]
+      ,[CertificationDate]
+      ,[CertifiedBy]
+  FROM [CAKN_BaldEagles].[dbo].[Dataset_Productivity]
+  WHERE CertificationLevel <> 'Raw'
+  ORDER BY Year,TerritoryID,NestNumber",sep="")
+SurveyData = dbGetQuery(Connection,Sql)
+SurveyDataFilename = paste0("WRST BAEA Certified Productivity Dataset Ver. ",Sys.Date(),".csv")
+SurveyDataFile = paste0(CertifiedDataDirectory,SurveyDataFilename)
+if(1==0){
+  write.csv(SurveyData,SurveyDataFile,quote=TRUE,na='',row.names = FALSE)
+}
+
+```
+
+```{r echo=FALSE,include=FALSE}
 # This query gets the survey details from the GSPE_Surveys database table
 Sql = paste("SELECT TOP (1000) [Year]
       ,[MinOccupancySurveyDate] as [Occ. survey start]
@@ -125,8 +162,6 @@ FirstSurveyYear = min(DF$Year)
 LatestSurveyYear = max(DF$Year)
 
 ```
-
-# DRAFT - Template still in progress
 
 # Abstract
 
@@ -164,12 +199,12 @@ A total of 609 km of riverways are surveyed annually, amounting to over 1200km o
 Productivity and success was recorded by WRST from 1989-1996 (Kozie, 1996)[<https://irma.nps.gov/DataStore/Reference/Profile/2238328>]. These metrics are available from the [NPS Data Store](https://irma.nps.gov/DataStore/Reference/Profile/2297286). Field data observations for these years remain unavailable as of the date of this report.
 
 ```{r , echo=FALSE}
-Sql = "SELECT TOP (1000) [Table]
+Sql = "SELECT REPLACE([Table],'SurveyData','Dataset_Productivity') as [Table]
       --,[Type]
       ,[Column]
       ,[ColumnDescription]
       --,[TableDescription]
-  FROM [CAKN_BaldEagles].[dbo].[DatabaseColumnsDescriptions]
+  FROM [DatabaseColumnsDescriptions]
   where [Table] in ('SurveyData','Nests') order by [Table],[Column]"
 DF = dbGetQuery(Connection,Sql)
 kable(DF)
