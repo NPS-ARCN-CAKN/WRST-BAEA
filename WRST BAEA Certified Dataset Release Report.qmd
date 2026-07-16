@@ -10,25 +10,30 @@ format:
 
 # Certified Dataset: Long-term Monitoring of Bald Eagle Abundance and Distribution in Wrangell - St. Elias National Park and Preserve
 
-Scott D. Miller  
-National Park Service, Arctic Inventory and Monitoring Network  
-240 W. 5th Ave  
-Anchorage, Alaska 99501   
+## National Park Service  
+## Wrangell - St. Elias National Park and Preserve
+## Central Alaska Inventory and Monitoring Network
+
+Scott D. Miller^1^ and Kyle Cutting^2^
+
+^1^ U.S. Department of the Interior\
+Enterprise Data Directorate\
+240 W. 5th Ave Anchorage\
+Alaska 99501
+
+^2^ National Park Service\
+Wrangell St. Elias National Park and Preserve\
+8 Richardson Hwy Mile 106\
+Copper Center, AK 99573
 
 `r format(Sys.Date(), "%B %d, %Y")`
-
-U.S. Department of the Interior\
-National Park Service, Alaska Region\
-Anchorage, Alaska\
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
 
 # Load libraries
+library(tidyverse)
 library(odbc)
-library(knitr)
-library(ggplot2)
-library(sp)
 library(sf)
 
 # Make kable show blanks for NAs
@@ -165,15 +170,21 @@ LatestSurveyYear = max(DF$Year)
 
 # Abstract
 
-The Copper River in WRST contains a high density of nesting Bald Eagles *(Haliaeetus leucocephalus)* in interior Alaska; accordingly, the National Park Service identified Bald Eagles as a focal fauna species to monitor in Wrangell-St. Elias National Park and Preserve (WRST). Bald Eagles in WRST are a high profile species that are dependent upon many resources along the Copper River and are ecologically interesting because they nest at the northern edge of the species range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities. Further, Bald Eagles nesting along the Copper River in WRST may face increasing disturbance due to forestry activities and increased human visitation.The objectives of the monitoring efforts are to 1) document the annual changes in occupancy of bald eagles, 2) document the annual changes in productivity of bald eagle nests, and document any changes in distribution of bald eagle nests. This data release contains Bald Eagle productivity and nest information from `r FirstSurveyYear` to `r LatestSurveyYear`.
+This dataset consists of certified nesting and productivity data from the National Park Service's long-term Bald Eagle monitoring program at Wrangell-St. Elias National Park and Preserve (WRST), Alaska, from `r FirstSurveyYear` to `r LatestSurveyYear`.
+
+The Copper River drainage in WRST hosts a high density of nesting Bald Eagles *(Haliaeetus leucocephalus)*. Bald Eagles in WRST are a high profile species that are dependent upon many resources, including salmon, along the Copper River and nest at the northern edge of the their range. Bald Eagles are top-trophic level predators and they often respond quickly to changes in their environment by changing their breeding activities.
+
+The objectives of the monitoring efforts are to 1) document the annual changes in occupancy of bald eagles, 2) document the annual changes in productivity of bald eagle nests, and document any changes in distribution of bald eagle nests.
 
 # Methods
 
-Methods follow (Putera and Miller (2018))[<https://irma.nps.gov/DataStore/Reference/Profile/2256539>]
+The bald eagle survey is part of long-term monitoring since 2004 (Putera and Miller, 2018). Five areas covering 378 miles of riverine habitat along the Copper, Chitina, and Bremner Rivers were surveyed (Figure 1). Two aerial surveys following the river corridor are conducted - one to document territorial occupancy, and the other to document productivity. Surveys are flown using a small airplane flying at low level (\<100m AGL) and low speed (\<100 kph), with one experienced observer.
 
-## Study Area
+We collect the following data on each nest observed: number of adults, behavior of adults, number of eggs and/or nestlings, tree species, status, and nest location. All nests still intact from the previous year’s surveys are rechecked for occupancy. During the productivity (chick) survey, all previously occupied nests from the first survey are rechecked . We define occupancy as a bird in incubation posture or two adult birds at a nest or in the nest tree. For the productivity survey, we recheck all occupied nests from the first survey to see if chicks are present.
 
-Five survey areas were defined along major riverways, and are described in Kozie (1996):
+# Study Area
+
+Five survey areas were defined along major riverways, and are described in Kozie (1996, Figure 1):
 
 1.) The Upper Copper River (UCR, 80km) extends from Copper and Tanada lakes to the confluence of the Chistochina River. White spruce (Picea glauca) is the predominant tree species, with balsam poplar (Populus balsamifera) common on the lower stretches. The Middle Copper River (MCR, 179km) extends from the Chistochina River south to the confluence of the Chitina River.
 
@@ -187,25 +198,160 @@ Five survey areas were defined along major riverways, and are described in Kozie
 
 A total of 609 km of riverways are surveyed annually, amounting to over 1200km of surveys.
 
-# Summary of data files
+```{r echo=FALSE}
+# Load spatial layers from either Data Store (slow, but reliable for anyone anywhere) or local directory
+if(1==1){
+  # Load spatial files locally
+  ShpPath = "C:/Work/GIS Common Layers/"
+  Parks = read_sf(paste(ShpPath,"AK_Parks.geojson",sep=""))
+  AK  = read_sf(paste(ShpPath,"Alaska.geojson",sep=""))
+  Rivers = read_sf(paste0(ShpPath,"Alaska_Rivers_1M.geojson.geojson"))
+  Roads = read_sf(paste0(ShpPath,"AK_Roads.geojson"))
+  Lakes = read_sf(paste0(ShpPath,"AK_Lakes/mv_major_lake_py.shp"))
+}else{
+  # Load spatial files from Data Store
+  Parks = st_read('https://irma.nps.gov/DataStore/DownloadFile/704836')
+  AK = st_read('https://irma.nps.gov/DataStore/DownloadFile/746052')
+  Rivers = read_sf('https://irma.nps.gov/DataStore/DownloadFile/758201') 
+}
 
-| File                                                         | Description                                                      |
-|--------------------------------------------------------------|------------------------------------------------------------------|
-| WRST BAEA Certified Productivity Dataset Ver. 2025-01-03.csv | Productivity and success data (comma separated values text file) |
-| WRST BAEA Certified Nests Dataset Ver. 2025-01-03.csv        | Nests data (comma separated values text file)                    |
+# Build a map of the survey area showing park boundaries, copper river and tributaries, etc.
+ggplot() +
+  
+  # Blue rectangle to make the background of the map blue
+  geom_rect(aes(xmin = -155,xmax = -140,ymin = 55,ymax = 70),fill = "steelblue3") +
+  
+  # Contextual layers
+  geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
+  geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
+  geom_sf(data=Rivers %>% filter(TYPE != 'I'),mapping=aes(),color='steelblue3',fill='steelblue3') +
+  geom_sf(data = Roads, fill = "gray50", color = 'gray50',alpha=0.4) +
+  geom_sf(data=Lakes,mapping=aes(),color='steelblue3',fill='steelblue3') +
+  
+  # Set the map limits, zoom into the BAEA monitoring area
+  coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
+  xlab('Longitude') +
+  ylab('Latitude') +
+
+  # WRST text Label
+  geom_text(aes(x = -144.25, y = 61.8, label = "Wrangell - St. Elias National\nPark and Preserve"), size = 4, color = "gray40", fontface = "bold") +
+  
+  # Upper Copper River label
+  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 4, color = "black") +
+  
+  # Middle Copper River label
+  geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 4, color = "black") +
+  
+  # Lower Copper River label
+  geom_text(aes(x = -145.2, y = 60.8, label = "Lower Copper River"), size = 4, color = "black") +
+  
+  # Chitina River label
+  geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 4, color = "black") +
+  
+  # Bremner River label
+  geom_text(aes(x = -143.8, y = 60.95, label = "Bremner River"), size = 4, color = "black") +
+  
+  # Minimal theme
+  theme_minimal() +
+  
+  # Legend position
+  theme(legend.position = "bottom")
+
+
+```
+
+Figure 1. Bald Eagles monitoring study area in Wrangell - St. Elias National Park and Preserve, Alaska.
+
+# Data files
+
+```{r, echo=FALSE}
+CertifiedDataDirectory = r'(C:\Work\VitalSigns\CAKN Bald Eagles\Data\Certified Datasets)'
+FilesList = as.data.frame(list.files(path = CertifiedDataDirectory, pattern = "\\.csv$", full.names = FALSE))
+colnames(FilesList) = 'File'
+FilesList$Description = 'Nests dataset'
+FilesList[2,2] = 'Productivity dataset'
+
+```
+
+This data release consists of two files, `r FilesList[1,1]` and `r FilesList[2,1]` (Table 1).
+
+Table 1. Files included in this release.
+
+```{r, echo=FALSE}
+knitr::kable(FilesList)
+
+```
 
 # Columns descriptions
 
-Productivity and success was recorded by WRST from 1989-1996 (Kozie, 1996)[<https://irma.nps.gov/DataStore/Reference/Profile/2238328>]. These metrics are available from the [NPS Data Store](https://irma.nps.gov/DataStore/Reference/Profile/2297286). Field data observations for these years remain unavailable as of the date of this report.
+## Nests dataset
+
+Column descriptions and data types describing the Nests dataset appear in Tables 2 and 3, below.
+
+Table 2. Column descriptions for the Nests dataset.
 
 ```{r , echo=FALSE}
-Sql = "SELECT REPLACE([Table],'SurveyData','Dataset_Productivity') as [Table]
-      --,[Type]
-      ,[Column]
-      ,[ColumnDescription]
-      --,[TableDescription]
-  FROM [DatabaseColumnsDescriptions]
-  where [Table] in ('SurveyData','Nests') order by [Table],[Column]"
-DF = dbGetQuery(Connection,Sql)
-kable(DF)
+Sql = "SELECT [Table],[Column],DataType,ColumnDescription as Description FROM Dataset_Certified_Metadata ORDER BY [Table]"
+MD = dbGetQuery(Connection,Sql)
+knitr::kable(MD %>% filter(Table == 'Dataset_Nests') %>% select(-Table,-DataType))
+
 ```
+
+Table 3. Column data types for the Nests dataset.
+
+```{r , echo=FALSE}
+knitr::kable(MD %>% filter(Table == 'Dataset_Nests') %>% select(-Table,-Description))
+
+```
+## Productivity dataset
+
+Column descriptions and data types describing the productivity dataset appear in Tables 4 and 5, below.
+
+Table 4. Column descriptions for the productivity dataset.
+
+```{r , echo=FALSE}
+Sql = "SELECT [Table],[Column],DataType,ColumnDescription as Description FROM Dataset_Certified_Metadata ORDER BY [Table]"
+MD = dbGetQuery(Connection,Sql)
+knitr::kable(MD %>% filter(Table == 'Dataset_Productivity') %>% select(-Table,-DataType))
+
+```
+
+Table 5. Column data types for the productivity dataset.
+
+```{r , echo=FALSE}
+knitr::kable(MD %>% filter(Table == 'Dataset_Productivity') %>% select(-Table,-Description))
+
+```
+
+# Data Summary
+
+A summary of the survey dates and number of records appears in Table 6, below.
+
+
+
+```{r , echo=FALSE}
+Sql = "SELECT Year
+, Records
+--, [Available nests]
+--, [Nests located]
+, [Start of productivity surveys] as [Start]
+, [End of productivity surveys] as [End]
+, [Number of productivity survey days] as Days
+FROM            Dashboard
+ORDER BY Year"
+Summary = dbGetQuery(Connection,Sql)
+
+```
+
+The Bald Eagle monitoring dataset consists of `r nrow(Summary)` Bald Eagle surveys (Table 6).
+
+Table 6. Summary of survey dates and number of records in the Bald Eagles monitoring dataset.
+
+```{r , echo=FALSE}
+knitr::kable(Summary)
+      
+```
+
+# Reference
+
+Putera, J. and S.D. Miller. 2018. Protocol implementation plan for bald eagle monitoring in Wrangell-St. Elias National Park & Preserve, Central Alaska Network: Version 1.0. Natural Resource Report. NPS/CAKN/NRR—2018/1752. National Park Service. Fort Collins, Colorado https://irma.nps.gov/DataStore/Reference/Profile/2256539
