@@ -47,7 +47,7 @@ if(1==1){
   Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
   AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
   Rivers = read_sf(paste0(ShpPath,"Alaska_Rivers_1M.geojson.geojson"))
-  Roads = read_sf(paste0(ShpPath,"DOT_RoadSystem_091318/","DOT_RoadSystem_091318.shp"))
+  Roads = read_sf(paste0(ShpPath,"AK_Roads.geojson"))
   Lakes = read_sf(paste0(ShpPath,"AK_Lakes/mv_major_lake_py.shp"))
 }else{
   # Load spatial files from Data Store
@@ -158,7 +158,7 @@ Document the annual changes in occupancy, productivity, and spatial distribution
 
 # Methods
 
-The bald eagle survey is part of long-term monitoring since 2004 (Putera and Miller, 2018). Five areas covering 378 miles of riverine habitat along the Copper, Chitina, and Bremner Rivers were surveyed (Figure 1).
+The bald eagle survey is part of long-term monitoring since 2004 (Putera and Miller, 2018). Five areas covering 378 miles of riverine habitat along the Copper, Chitina, and Bremner Rivers were surveyed (Figure `r FigureCounter`).
 
 Two aerial surveys following the river corridor were conducted in 2025 - one to document territorial occupancy, and the other to document productivity. Surveys were flown using a small airplane flying at low level (<100m AGL) and low speed (<100 kph), with one experienced observer. 
 
@@ -213,14 +213,18 @@ ggplot() +
 
 
 ```
+Figure `r FigureCounter`. Bald eagle monitoring study area.
 
 # Results
 
-Table `r TableCounter` shows overall nest success and productivity patterns observed in `r SurveyYear`. Table `r TableCounter + 1` lists productivity metrics by river segment. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter`.
+Table `r TableCounter` shows overall nest success and productivity patterns observed in `r SurveyYear`. Table `r TableCounter + 1` lists productivity metrics by river segment. Spatial distribution of surveyed nests and their productivity is shown in Figure `r FigureCounter + 1`.
 
 Table `r TableCounter`. Results summary, `r SurveyYear` bald eagle survey.
 
 ```{r echo=FALSE, label="Current survey metrics table"}
+# Increment the figure counter
+FigureCounter = FigureCounter +1
+
 # Summarize the eagle counts for the current survey into 
 # a table, transpose it so it fits the report better, modify the header, and output
 Summary_Current = Summary %>% 
@@ -363,8 +367,6 @@ National Park and Preserve"), size = 3, color = "gray40") +
   # Legend position
   theme(legend.position = "bottom")
 
-# Increment the figure counter
-FigureCounter = FigureCounter + 1
 ```
 
 Figure `r FigureCounter`. Bald eagle nest distribution and productivity in the Copper River Valley, `r SurveyYear`. Mean occupancy rate was `r PctOccupied`% and mean success rate was `r PctSuccessful`%. 
@@ -375,6 +377,8 @@ Bald eagle productivity metrics are presented by river segment in Table `r Table
 Table `r TableCounter`. Bald eagle productivity and success rates by river segment, `r SurveyYear`. MCR = Middle Copper River, LCR = Lower Copper River, UCR = Upper Copper River, BR = Bremner River, CHIT = Chitina River.
 
 ```{r echo=FALSE,label="Bald eagle productivity and success rates by river segment"}
+# Increment the figure counter
+FigureCounter = FigureCounter + 1
 
 # Retrieve the annual summary information from the database
 Sql = paste("SELECT Year
