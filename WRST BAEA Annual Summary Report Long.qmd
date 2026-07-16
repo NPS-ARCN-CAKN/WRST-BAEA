@@ -9,96 +9,13 @@ format:
     columns: 1
 ---
 
-
-```{=html}
-<style>
-
-body {
-    font-family: "Times New Roman";
-    font-size: 11.5pt;
-    color: black;
-}
-
-.title {
-  font-family: "Times New Roman";
-  font-size: 16pt;
-  font-weight: bold;
-  color: black;
-}
-
-h1 {
-    font-family: "Arial";
-    font-size: 16pt;
-    font-weight: bold;
-    color: black;
-}
-
-
-h2 {
-  font-family: "Arial";
-  font-size: 11.5pt;
-  font-weight: bold;
-  color: black;
-}
-
-h3 {
-  font-family: "Arial";
-  font-size: 10.5pt;
-  font-weight: bold;
-  color: black;
-}
-
-h4 {
-    font-family: "Times New Roman";
-    font-size: 12pt;
-    color: black;
-}
-
-p {
-    font-family: "Times New Roman";
-    font-size: 11.5pt;
-    color: black;
-}
-
-.caption {
-    font-family: "Arial";
-    font-size: 10pt;
-    color: black;
-}
-
-th {
-    font-family: "Arial";
-    font-size: 9pt;
-    font-weight: bold;
-    color: black;
-}
-
-tr,td,table {
-    font-family: "Arial";
-    font-size: 9pt;
-    color: black;
-}
-
-.header{
-  font-family: "Arial";
-  font-size: 10pt;
-  font-weight: bold;
-  color: black;
-}
-
-</style>
-```
-
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) # Prevent overwhelming messages from reaching user
 
 # Load libraries
-library(RODBC)
-library(knitr)
-library(ggplot2)
-library(sp)
+library(odbc)
+library(tidyverse)
 library(sf)
-library(dplyr)
 
 # Make kable show blanks for NAs
 options(knitr.kable.NA = '')
@@ -115,10 +32,8 @@ SurveyYear = 2023  # Set this to the desired report year
 # ODBC connection to the BAEA monitoring SQL Server Database. Set this up using 'ODBC Data Sources 64bit' on your computer.
 # Contact data manager for server and database details.
 # ConnectionString to the bald eagles Sql Server database
-BaldEaglesConnectionString = "Driver=SQL Server Native Client 11.0;Server=inpyugamsvm01\\nuna;Database=CAKN_BaldEagles;trusted_connection=YES"
-
-# Database connection to the eagles database
-BaldEaglesConnection = odbcDriverConnect(connection = BaldEaglesConnectionString)
+# Connection to the bald eagles Sql Server database
+Connection = dbConnect(odbc(),Driver = "Sql Server",Server = "INP2300IRMADB01.nps.doi.net\\NTWK", Database = "CAKN_BaldEagles")
 
 # Set the path to shapefiles used in the map, AK, Parks, Rivers, etc
 ShpPath = "C:/Work/GIS Common Layers/"
@@ -135,11 +50,6 @@ output:
 
 # Current date
 CurrentDate = Sys.Date() # Get the current date
-
-# Function to return data frames from SQL database queries
-GetDataFrameFromDatabase <- function(Sql) {
-   return(sqlQuery(BaldEaglesConnection, Sql))
-}
 
 # Function to convert a date string to a long date
 GetLongDate <- function(Date) {
@@ -169,7 +79,7 @@ Sql = paste("SELECT
 -- ,[NumberOfProductivitySurveyDays]
 FROM [CAKN_BaldEagles].[dbo].[Summary_SurveyDatesByYear] 
 WHERE [Year] = ",SurveyYear," ORDER BY Year",sep="")
-Summary_SurveyDatesByYearDataFrame = GetDataFrameFromDatabase(Sql) # Get the data from the database into a data frame
+Summary_SurveyDatesByYearDataFrame = dbGetQuery(Connection,Sql) # Get the data from the database into a data frame
 
 # Build some survey date values to use later in the markdown text
 OStart = Summary_SurveyDatesByYearDataFrame$`Occupancy survey start`
@@ -196,7 +106,7 @@ WHERE Year <= ",SurveyYear,"
 ORDER BY [Year]",sep="")
 
 # Get the data from the database into a data frame
-Summary_SuccessByYearDataFrame = GetDataFrameFromDatabase(Sql) 
+Summary_SuccessByYearDataFrame = dbGetQuery(Connection,Sql) 
 
 # We'll need just this year's data in a separated data frame from all the historical data.
 # Filter on the summary data frame on the current year and then remove the Year column
@@ -281,10 +191,21 @@ A total of 609 km of riverways are surveyed annually, amounting to over 1200km o
 
 ```{r echo=FALSE,label="Survey area map",fig.alt=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.cap=paste("Figure ",FigureCounter,". Map of the bald eagles monitoring survey area in the Copper River drainage, Wrangell-St. Elias National Park and Preserve. Major tributaries in the survey area include the Chitina and Bremner rivers.",sep=""),fig.width=FigWidth}
 
-# Load shapefiles to be used in the maps later.
-Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
-Rivers = read_sf(paste(ShpPath,"Alaska_Rivers_1M.shp",sep=""))
-AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
+# Load spatial layers from either Data Store (slow, but reliable for anyone anywhere) or local directory
+if(1==1){
+  # Load spatial files locally
+  ShpPath = "C:/Work/GIS Common Layers/"
+  Parks = read_sf(paste(ShpPath,"GCS/AKParks_reprojected.shp",sep=""))
+  AK  = read_sf(paste(ShpPath,"GCS/AK_GCS_poly.shp",sep=""))
+  Rivers = read_sf(paste0(ShpPath,"Alaska_Rivers_1M.geojson.geojson"))
+  Roads = read_sf(paste0(ShpPath,"AK_Roads.geojson"))
+  Lakes = read_sf(paste0(ShpPath,"AK_Lakes/mv_major_lake_py.shp"))
+}else{
+  # Load spatial files from Data Store
+  Parks = st_read('https://irma.nps.gov/DataStore/DownloadFile/704836')
+  AK = st_read('https://irma.nps.gov/DataStore/DownloadFile/746052')
+  Rivers = read_sf('https://irma.nps.gov/DataStore/DownloadFile/758201') 
+}
 
 # Build a map of the survey area showing park boundaries, copper river and tributaries, etc.
 ggplot() +
@@ -386,34 +307,56 @@ TableCounter = TableCounter + 1
 ```{r echo=FALSE, label="Success map",fig.alt=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",Occupied,"% and mean success rate was ",Successful,"%.",sep=''),fig.cap=paste("Figure ",FigureCounter,". Dispersion of successful bald eagle nests in the Copper River Valley in in ",SurveyYear,". Green areas show areas where nests were most successful at producing young. Mean occupancy rate was ",PctOccupied,"% and mean success rate was ",PctSuccessful,"%.",sep=''),fig.width=FigWidth}
 
 # Get the spatial locations of successful and failed nests for a map
-Sql = paste("SELECT   
---Nest_ID
---, RiverSegment
-[Lat-NAD83] AS Latitude
-, [Lon-NAD83] AS Longitude
-, NumYng
-,CASE 
-  WHEN StatusCode_P = 'IF' THEN 'Failed' 
-  WHEN StatusCode_P = 'S' THEN 'Succeeded' 
-  ELSE NULL 
-END AS Status
-, StatusCode_P
---, Nest_O
-FROM Dataset_Productivity
-WHERE (Year = ",SurveyYear,") 
-AND ([Lat-NAD83] IS NOT NULL) -- Avoid missing spatial coords
-AND ([Lat-NAD83] > 50) -- Avoid Lat/Lon records of 0/0
-AND (StatusCode_P IN ('S', 'IF')) -- Successful or faild, ignore not found and not counted records",sep='')
-
-# Get data frame from query
-Dataset_ProductivityDataFrame = GetDataFrameFromDatabase(Sql)
-Dataset_ProductivityDataFrame[is.na(Dataset_ProductivityDataFrame)] = " "
+# Sql = paste("SELECT   
+# --Nest_ID
+# --, RiverSegment
+# [Latitude] AS Latitude
+# , [Longitude] AS Longitude
+# , NumYng
+# ,CASE 
+#   WHEN StatusCode_P = 'IF' THEN 'Failed' 
+#   WHEN StatusCode_P = 'S' THEN 'Succeeded' 
+#   ELSE NULL 
+# END AS Status
+# , StatusCode_P
+# --, Nest_O
+# FROM Dataset_Productivity
+# WHERE (Year = ",SurveyYear,") 
+# AND ([Latitude] IS NOT NULL) -- Avoid missing spatial coords
+# AND ([Latitude] > 50) -- Avoid Lat/Lon records of 0/0
+# AND (StatusCode_P IN ('S', 'IF')) -- Successful or faild, ignore not found and not counted records",sep='')
+# 
+# # Get data frame from query
+# Dataset_ProductivityDataFrame = dbGetQuery(Connection,Sql)
+# Dataset_ProductivityDataFrame[is.na(Dataset_ProductivityDataFrame)] = " "
 
 # Map Title
 title = paste("Dispersion of successful nests, ", SurveyYear)
 
-# Query out just the successful nests
-#SuccessFulNestsDataFrame = subset(Dataset_ProductivityDataFrame,StatusCode_P == 'S')
+
+# Get the spatial locations of successful and failed nests for a map
+Sql = paste0("SELECT   
+Nest_ID
+, RiverSegment
+, Latitude AS Latitude
+, Longitude AS Longitude
+, NumYng
+, Productivity
+, CASE
+	WHEN NOT Productivity IN ('Successful','Failed') THEN 'Not initated, not found, or productivity unknown'
+	ELSE Productivity
+END As Status
+, StatusCode_P
+, Nest_O
+FROM Dataset_Productivity
+WHERE (Year = ",SurveyYear,") 
+AND (Latitude IS NOT NULL) -- Avoid missing spatial coords
+AND (Latitude > 50) -- Avoid Lat/Lon records of 0/0
+--AND (StatusCode_P IN ('S', 'IF')) -- Successful or failed, ignore not found and not counted records")
+
+# Get data frame from query
+Nests = dbGetQuery(Connection,Sql)
+#Nests[is.na(Nests)] = " "
 
 # Plot the nest success on a map
 ggplot() +
@@ -423,33 +366,38 @@ ggplot() +
   
   # Alaska outline
   geom_sf(data=AK,mapping=aes(), color='darkgray',fill='snow2') +
-  
-  # Park boundary
   geom_sf(data=Parks,mapping=aes(), color='yellow4',fill='yellow4',alpha=0.3) +
-
-    # Rivers
-  geom_sf(data=Rivers,mapping=aes(),color='steelblue3',fill='steelblue3') +  
-  
-  # Productive nests
+  geom_sf(data=Rivers %>% filter(TYPE != 'I'),mapping=aes(),color='steelblue3',fill='steelblue3') +
+  geom_sf(data = Roads, fill = "gray50", color = 'gray50',alpha=0.4) +
+    
+  # Failed nests
   # Consider carefully whether to publish nest locations, or not
-  geom_point(data=Dataset_ProductivityDataFrame, aes(x = Longitude, y = Latitude,colour=Status,na.rm = TRUE,shape=Status),size=2) +
-  scale_color_manual(values = c("Succeeded" = "black", "Failed" = "black")) +
-  scale_shape_manual(values = c(4,19)) + # 4 = X, 19 = dot
+  # geom_point(data=Nests, aes(x = Longitude, y = Latitude,colour=Productivity,shape=Productivity,size=Productivity)) +
+  # scale_color_manual(values = c('Not initiated' = 'gray70','Successful' = 'green','Failed' = 'red','Productivity unknown' ='orange','Not found or not checked' = 'gray70')) +
+  # scale_shape_manual(values = c('Not initiated' = 16,'Successful' = 16,'Failed' = 16,'Productivity unknown' = 16,'Not found or not checked' = 16)) +
+  # scale_size_manual(values = c('Not initiated' = 1,'Successful' = 3,'Failed' = 2,'Productivity unknown' = 1,'Not found or not checked' = 1)) +
+  
+  geom_point(data=Nests, aes(x = Longitude, y = Latitude,colour=Status,shape=Status,size=Status)) +
+  scale_color_manual(values = c('Not initated, not found, or productivity unknown' = 'black','Successful' = 'darkgreen','Failed' = 'red')) +
+  scale_shape_manual(values = c('Not initated, not found, or productivity unknown' = 16,'Successful' = 16,'Failed' = 16)) +
+  scale_size_manual(values = c('Not initated, not found, or productivity unknown' = 1,'Successful' = 3,'Failed' = 2)) +
+  
+  # Productive nests, increasing size with productivity
+  # geom_point(data=subset(Nests,Productivity=="Successful"), aes(x = Longitude, y = Latitude, size=factor(NumYng)),color="black") +
+  # # Override the size attributes assigned by geom_point. 'values' is size of symbol.
+  # scale_size_manual(name="Young produced",values = c(2,5),breaks = c(1,2), labels = c("1","2")) + 
   
   # Set the map limits
   coord_sf(xlim = c(-146.6, -142), ylim = c(60.5, 62.8), expand = FALSE) +
   xlab('Longitude') +
   ylab('Latitude')+
-  
-  # Minimal theme
-  theme_minimal() +
-  
+
   # WRST Label
   geom_text(aes(x = -143.5, y = 61.8, label = "Wrangell - St. Elias 
-National Park and Preserve"), size = 3, color = "black") +
+National Park and Preserve"), size = 3, color = "gray40") +
   
     # Upper Copper River label
-  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper River"), size = 3, color = "dodgerblue4") +
+  geom_text(aes(x = -144, y = 62.45, label = "Upper Copper\nRiver"), size = 3, color = "dodgerblue4") +
   
   # Middle Copper River label
   geom_text(aes(x = -145.2, y = 61.5, label = "Middle Copper River"), size = 3, color = "dodgerblue4") +
@@ -461,7 +409,13 @@ National Park and Preserve"), size = 3, color = "black") +
   geom_text(aes(x = -143.8, y = 61.25, label = "Chitina River"), size = 3, color = "dodgerblue4") +
   
   # Bremner River label
-  geom_text(aes(x = -144, y = 60.9, label = "Bremner River"), size = 3, color = "dodgerblue4")
+  geom_text(aes(x = -143.8, y = 60.95, label = "Bremner River"), size = 3, color = "dodgerblue4") +
+  
+  # Minimal theme
+  theme_minimal() +
+  
+  # Legend position
+  theme(legend.position = "bottom")
 
 # Increment the figure counter
 FigureCounter = FigureCounter + 1
@@ -548,7 +502,7 @@ And NOT(RiverSegment = 'Chitina' And Year = 1989) -- Only two nests observed, on
 ORDER BY Year DESC,RiverSegmentCode",sep="")
 
 # Get the data from the database into a data frame
-SuccessByYearRiverSegmentDF = GetDataFrameFromDatabase(Sql) 
+SuccessByYearRiverSegmentDF = dbGetQuery(Connection,Sql) 
 
 # Filter the above data frame on the current year and omit the first (Year) column
 CurrentSuccessByYearRiverSegmentDF = SuccessByYearRiverSegmentDF[SuccessByYearRiverSegmentDF$Year == SurveyYear,2:11]
@@ -793,7 +747,7 @@ Bald eagle monitoring has been done from `r MinYear` through `r MaxYear` (Append
 ```{r echo = FALSE,label="Get results by river segment"}
 
 # Get long term results by river segment into a data frame
-Summary_SuccessByRiverSegmentDataFrame = GetDataFrameFromDatabase("SELECT 
+Summary_SuccessByRiverSegmentDataFrame = dbGetQuery(Connection,"SELECT 
 RiverSegment
 , Earliest
 , Latest
